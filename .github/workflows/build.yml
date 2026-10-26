@@ -1,4 +1,4 @@
-_name: Build_Android_APK
++_name: Build_Android_APK
 
 on:
   workflow_dispatch:
