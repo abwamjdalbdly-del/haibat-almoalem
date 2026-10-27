@@ -1,18 +1,22 @@
-
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-}
-
-android {
-    namespace = "com.teacherbag"
-    compileSdk = 35
-
-    defaultConfig {
-        applicationId = "com.teacherbag"
-        minSdk = 23
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id("com.android.application") version "8.7.3"
+        id("org.jetbrains.kotlin.android") version "2.0.21"
     }
 }
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "TeacherBag"
+include(":app")
