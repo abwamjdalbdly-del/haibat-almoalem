@@ -91,7 +91,49 @@ class MainActivity : Activity() {
         root.addView(note)
     }
 
-    
+   private fun classNames(): MutableList<String> {
+    return prefs.getString("class_names_v1", "")
+        ?.split("\n")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.distinct()
+        ?.toMutableList()
+        ?: mutableListOf()
+}
+
+private fun saveClassNames(names: List<String>) {
+    prefs.edit()
+        .putString(
+            "class_names_v1",
+            names.map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .joinToString("\n")
+        )
+        .apply()
+} 
+
+private fun classStudentNames(className: String): MutableList<String> {
+    return prefs.getString("class_students_" + Uri.encode(className), "")
+        ?.split("\n")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.distinct()
+        ?.toMutableList()
+        ?: mutableListOf()
+}
+
+private fun saveClassStudentNames(className: String, names: List<String>) {
+    prefs.edit()
+        .putString(
+            "class_students_" + Uri.encode(className),
+            names.map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .joinToString("\n")
+        )
+        .apply()
+}
 private fun studentNames(): MutableSet<String> {
     val saved = prefs.getString("students_list_v2", null)
     val oldNames = prefs.getStringSet("students", emptySet())
@@ -249,7 +291,7 @@ private fun saveStudentNames(names: Set<String>) {
                         try {
                             val extracted = readNamesFromSheet(book, sheet, colIndex, first, last)
                             dialog.dismiss()
-                            previewNames(extracted)
+                           previewNames(extracted, sheet.name) 
                         } catch (e: Exception) {
                             showError("تعذر قراءة الأسماء من ورقة العمل المختارة.")
                         }
@@ -259,9 +301,28 @@ private fun saveStudentNames(names: Set<String>) {
             }
     }
 
-    private fun previewNames(rawNames: List<String>) {
+   private fun previewNames(rawNames: List<String>, className: String)  {
         val seen = linkedSetOf<String>()
-        val existing = studentNames().map { normalizeName(it) }.toSet()
+        val classExisting = classStudentNames(className)
+    .map { normalizeName(it) }
+    .toSet()
+
+val newNames = mutableListOf<String>()
+val seen = mutableSetOf<String>()
+var duplicates = 0
+
+for (raw in rawNames) {
+    val name = raw.trim()
+    if (name.isEmpty()) continue
+
+    val normalized = normalizeName(name)
+
+    if (normalized in classExisting || !seen.add(normalized)) {
+        duplicates++
+    } else {
+        newNames.add(name)
+    }
+}
         val newNames = mutableListOf<String>()
         var duplicates = 0
         for (raw in rawNames) {
