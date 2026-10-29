@@ -258,7 +258,7 @@ private fun saveStudentNames(names: Set<String>) {
                 dialog.show()
             }
     }
-val names = studentNames().toList()
+
     private fun previewNames(rawNames: List<String>) {
         val seen = linkedSetOf<String>()
         val existing = studentNames().map { normalizeName(it) }.toSet()
