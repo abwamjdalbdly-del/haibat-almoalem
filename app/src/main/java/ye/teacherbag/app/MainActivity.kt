@@ -399,52 +399,84 @@ class MainActivity : Activity() {
         return out.toString()
     }
 
-    private fun readNamesFromSheet(
-        book: ExcelBook,
-        sheet: SheetInfo,
-        column: Int,
-        firstRow: Int,
-        lastRow: Int
-    ): List<String> {
-        val bytes = book.entries[sheet.path] ?: error("Missing sheet data")
-        val parser = Xml.newPullParser()
-        parser.setInput(ByteArrayInputStream(bytes), "UTF-8")
-        val result = mutableMapOf<Int, String>()
-        var currentRow = -1
-        var currentCellColumn = -1
-        var cellType: String? = null
-        var cellValue = ""
-        var inTargetCell = false
-        var event = parser.eventType
-        while (event != XmlPullParser.END_DOCUMENT) {
-            when (event) {
-                XmlPullParser.START_TAG -> when (parser.name) {
-                    "row" -> currentRow = parser.getAttributeValue(null, "r")?.toIntOrNull() ?: -1
-                    "c" -> {
-                        val ref = parser.getAttributeValue(null, "r") ?: ""
-                        currentCellColumn = columnFromCellReference(ref)
-                        cellType = parser.getAttributeValue(null, "t")
-                        cellValue = ""
-                        inTargetCell = currentRow in firstRow..lastRow && currentCellColumn == column
-                    }
-                    "v" -> if (inTargetCell) cellValue = readText(parser)
-                    "t" -> if (inTargetCell && cellType == "inlineStr") cellValue += readText(parser)
+    
+private fun readNamesFromSheet(
+    book: ExcelBook,
+    sheet: SheetInfo,
+    column: Int,
+    firstRow: Int,
+    lastRow: Int
+): List<String> {
+    val bytes = book.entries[sheet.path] ?: error("Missing sheet data")
+    val parser = Xml.newPullParser()
+    parser.setInput(ByteArrayInputStream(bytes), "UTF-8")
+
+    val result = mutableMapOf<Int, String>()
+    var currentRow = -1
+    var currentCellColumn = -1
+    var cellType: String? = null
+    val cellValue = StringBuilder()
+    var inTargetCell = false
+    var inValue = false
+    var inInlineText = false
+
+    var event = parser.eventType
+    while (event != XmlPullParser.END_DOCUMENT) {
+        when (event) {
+            XmlPullParser.START_TAG -> when (parser.name) {
+                "row" -> {
+                    currentRow = parser.getAttributeValue(null, "r")
+                        ?.toIntOrNull() ?: -1
                 }
-                XmlPullParser.END_TAG -> if (parser.name == "c") {
-                    if (inTargetCell) {
-                        val finalValue = when (cellType) {
-                            "s" -> cellValue.toIntOrNull()?.let { book.sharedStrings.getOrNull(it) } ?: ""
-                            else -> cellValue
-                        }.trim()
-                        if (finalValue.isNotEmpty()) result[currentRow] = finalValue
-                    }
-                    inTargetCell = false
+                "c" -> {
+                    val ref = parser.getAttributeValue(null, "r") ?: ""
+                    currentCellColumn = columnFromCellReference(ref)
+                    cellType = parser.getAttributeValue(null, "t")
+                    cellValue.setLength(0)
+                    inTargetCell =
+                        currentRow in firstRow..lastRow &&
+                        currentCellColumn == column
+                }
+                "v" -> inValue = inTargetCell
+                "t" -> inInlineText =
+                    inTargetCell && cellType == "inlineStr"
+            }
+
+            XmlPullParser.TEXT, XmlPullParser.CDSECT -> {
+                if (inTargetCell && (inValue || inInlineText)) {
+                    cellValue.append(parser.text)
                 }
             }
-            event = parser.next()
+
+            XmlPullParser.END_TAG -> when (parser.name) {
+                "v" -> inValue = false
+                "t" -> inInlineText = false
+                "c" -> {
+                    if (inTargetCell) {
+                        val raw = cellValue.toString().trim()
+                        val value = if (cellType == "s") {
+                            raw.toIntOrNull()
+                                ?.let { book.sharedStrings.getOrNull(it) }
+                                ?: ""
+                        } else {
+                            raw
+                        }.trim()
+
+                        if (value.isNotEmpty()) {
+                            result[currentRow] = value
+                        }
+                    }
+                    inTargetCell = false
+                    inValue = false
+                    inInlineText = false
+                }
+            }
         }
-        return (firstRow..lastRow).mapNotNull { result[it] }
+        event = parser.next()
     }
+
+    return (firstRow..lastRow).mapNotNull { result[it] }
+}
 
     private fun columnFromCellReference(ref: String): Int {
         var value = 0
