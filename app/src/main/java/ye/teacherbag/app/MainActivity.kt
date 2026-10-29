@@ -151,7 +151,7 @@ private fun saveStudentNames(names: Set<String>) {
         }
         addButton("استيراد أسماء الطلاب من Excel") { chooseExcelFile() }
         addButton("عرض أسماء الطلاب") {
-            val names = studentNames().sorted()
+            val names = studentNames().toList()
             AlertDialog.Builder(this).setTitle("أسماء الطلاب")
                 .setMessage(if (names.isEmpty()) "لا توجد أسماء محفوظة بعد" else names.joinToString("\n"))
                 .setPositiveButton("إغلاق", null).show()
@@ -258,7 +258,7 @@ private fun saveStudentNames(names: Set<String>) {
                 dialog.show()
             }
     }
-
+val names = studentNames().toList()
     private fun previewNames(rawNames: List<String>) {
         val seen = linkedSetOf<String>()
         val existing = studentNames().map { normalizeName(it) }.toSet()
