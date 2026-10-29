@@ -91,12 +91,38 @@ class MainActivity : Activity() {
         root.addView(note)
     }
 
-    private fun studentNames(): MutableSet<String> =
-        prefs.getStringSet("students", emptySet())!!.toMutableSet()
+    
+private fun studentNames(): MutableSet<String> {
+    val saved = prefs.getString("students_list_v2", null)
+    val oldNames = prefs.getStringSet("students", emptySet())
+        ?.toSet() ?: emptySet()
 
-    private fun saveStudentNames(names: Set<String>) {
-        prefs.edit().putStringSet("students", names.toSet()).apply()
+    val names = linkedSetOf<String>()
+
+    if (saved != null) {
+        names.addAll(
+            saved.split("\n")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+        )
+    } else {
+        names.addAll(oldNames)
     }
+
+    return names
+}
+
+private fun saveStudentNames(names: Set<String>) {
+    val cleanNames = names.map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+
+    prefs.edit()
+        .putString("students_list_v2", cleanNames.joinToString("\n"))
+        .putStringSet("students", cleanNames.toSet())
+        .apply()
+}
+
 
     private fun showStudents() {
         setup("قاعدة بيانات الطلاب")
