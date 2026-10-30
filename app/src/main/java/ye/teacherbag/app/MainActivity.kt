@@ -638,7 +638,3 @@ class MainActivity : Activity() {
         return (firstRow..lastRow).mapNotNull{result[it]}
     }
 }
-                        target=row in firstRow..lastRow&&col==column
-                    }
-                    "v" -> inValue=target
-                    "t" -> inline=target&&type==
