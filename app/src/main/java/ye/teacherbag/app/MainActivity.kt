@@ -111,68 +111,126 @@ class MainActivity : Activity() {
     }
     private fun normalizeName(name:String)=name.trim().replace(Regex("\\s+")," ").lowercase()
     private fun previewNames(rawNames:List<String>,className:String) {
-        val existing=classStudentNames(className).map{normalizeName(it)}.toSet()
-        val seen=mutableSetOf<String>(); val newNames=mutableListOf<String>(); var duplicates=0
-        for(raw in rawNames) { val name=raw.trim(); if(name.isEmpty()) continue; val key=normalizeName(name); if(key in existing || !seen.add(key)) duplicates++ else newNames.add(name) }
-        val message=if(newNames.isEmpty()) "لا توجد أسماء جديدة للحفظ." else "الأسماء الجديدة للصف $className (${newNames.size}):\n\n"+newNames.take(100).joinToString("\n")+(if(newNames.size>100)"\n... وبقية الأسماء" else "")
-        AlertDialog.Builder(this).setTitle("معاينة قبل الحفظ").setMessage("$message\n\nالمكرر أو الموجود مسبقًا: $duplicates").setPositiveButton(if(newNames.isEmpty())"إغلاق" else "حفظ الأسماء") { _,_ ->
-            if(newNames.isNotEmpty()) {
-                val combined=(classStudentNames(className)+newNames).distinctBy{normalizeName(it)}
-                saveClassStudentNames(className,combined)
-                val classes=classNames(); if(className !in classes) { classes.add(className); saveClassNames(classes) }
-                val all=studentNames(); all.addAll(newNames); saveStudentNames(all)
-                AlertDialog.Builder(this).setTitle("اكتمل الاستيراد").setMessage("تم حفظ ${newNames.size} اسمًا في صف $className.\nتم تجاهل $duplicates اسمًا مكررًا.").setPositiveButton("حسنًا"){_,_->showStudents()}.show()
+        // Import the selected worksheet as the authoritative roster for this class.
+        // Do not compare it with the global student list: that caused existing global
+        // names to be incorrectly treated as already assigned to this class.
+        val clean=mutableListOf<String>()
+        val seen=mutableSetOf<String>()
+        var duplicates=0
+        for(raw in rawNames) {
+            val name=raw.trim().replace(Regex("\\s+")," ")
+            if(name.isEmpty()) continue
+            if(!seen.add(normalizeName(name))) duplicates++ else clean.add(name)
+        }
+        val oldCount=classStudentNames(className).size
+        if(clean.isEmpty()) {
+            showError("لم يتم العثور على أسماء في ورقة $className. تحقق من عمود الأسماء وأرقام الصفوف.")
+            return
+        }
+        val preview="عدد الأسماء المقروءة للصف $className: ${clean.size}\n"+
+            "الأسماء المكررة داخل ملف Excel: $duplicates\n"+
+            "عدد الأسماء المرتبطة بالصف حاليًا: $oldCount\n\n"+
+            clean.take(100).joinToString("\n")+
+            if(clean.size>100) "\n... وبقية الأسماء (${clean.size-100})" else ""
+        AlertDialog.Builder(this).setTitle("معاينة أسماء الصف")
+            .setMessage(preview)
+            .setPositiveButton("اعتماد القائمة وتحديث الصف") { _,_ ->
+                // Replace only this class roster. Other classes and attendance keys remain untouched.
+                saveClassStudentNames(className,clean)
+                val classes=classNames()
+                if(classes.none{it.equals(className,true)}) { classes.add(className); saveClassNames(classes) }
+                val all=studentNames()
+                all.addAll(clean)
+                saveStudentNames(all)
+                AlertDialog.Builder(this).setTitle("تم تحديث الصف")
+                    .setMessage("تم ربط ${clean.size} طالبًا بالصف $className.\nلم تُحذف أسماء القاعدة العامة أو بيانات الصفوف الأخرى.\nالمكرر داخل الملف: $duplicates")
+                    .setPositiveButton("حسنًا") { _,_->showStudents() }.show()
             }
-        }.setNegativeButton("رجوع",null).show()
+            .setNegativeButton("إلغاء",null).show()
     }
 
     private fun showAttendance() {
         setup("كشف الحضور والغياب")
         val classes=classNames()
         if(classes.isEmpty()) {
-            root.addView(TextView(this).apply { text="لا توجد صفوف مستوردة بعد. انتقل إلى قاعدة بيانات الطلاب واستورد ورقة Excel لكل صف."; textSize=17f; setPadding(4,8,4,18) })
-        } else {
-            root.addView(TextView(this).apply{text="اختر الصف الدراسي:";textSize=16f})
-            val classSpinner=Spinner(this); classSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,classes); root.addView(classSpinner)
-            root.addView(TextView(this).apply{text="الفترة أو الشهر:";textSize=16f})
-            val period=EditText(this).apply{hint="مثال: أكتوبر أو الأسبوع الأول";textSize=17f}; root.addView(period)
-            val studentArea=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}; root.addView(studentArea,LinearLayout.LayoutParams(-1,-2))
-            var currentClass=classes.first(); var marks=linkedMapOf<String,String>()
-            fun storageKey()="attendance_v2_"+Uri.encode(currentClass)+"_"+Uri.encode(period.text.toString().trim())
-            fun render() {
-                studentArea.removeAllViews(); currentClass=classSpinner.selectedItem?.toString() ?: classes.first()
-                val names=classStudentNames(currentClass)
-                if(names.isEmpty()) { studentArea.addView(TextView(this).apply{text="لا توجد أسماء محفوظة لهذا الصف.";textSize=16f}); return }
-                val key=storageKey(); val saved=prefs.getString(key,"")!!; marks=linkedMapOf()
-                saved.split("\n").filter{it.contains("|")}.forEach { val p=it.split("|",limit=2); if(p.size==2) marks[p[0]]=p[1] }
-                names.forEach { name ->
-                    val line=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(0,4,0,4)}
-                    line.addView(TextView(this).apply{text=name;textSize=16f},LinearLayout.LayoutParams(0,-2,1f))
-                    val spinner=Spinner(this); spinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("√ حاضر","غ غائب","م بعذر"))
-                    val selected=when(marks[name]){"غ"->1;"م"->2;else->0}; spinner.setSelection(selected)
-                    spinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
-                        override fun onNothingSelected(parent:AdapterView<*>?) {}
-                        override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { marks[name]=listOf("√","غ","م")[position] }
-                    }
-                    line.addView(spinner,LinearLayout.LayoutParams(145,-2)); studentArea.addView(line)
-                }
-                val save=Button(this).apply{text="حفظ كشف هذا الصف والفترة";isAllCaps=false;setTextColor(Color.WHITE);setBackgroundColor(green)}
-                studentArea.addView(save,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,8,0,5)})
-                save.setOnClickListener {
-                    val p=period.text.toString().trim(); if(p.isEmpty()){toast("اكتب الشهر أو الفترة أولاً");return@setOnClickListener}
-                    val packed=names.joinToString("\n"){ "$it|${marks[it] ?: "√"}" }; prefs.edit().putString(storageKey(),packed).apply()
-                    val values=names.map{marks[it]?:"√"}; val present=values.count{it=="√"}; val absent=values.count{it=="غ"}; val excused=values.count{it=="م"}
-                    AlertDialog.Builder(this).setTitle("تم حفظ الكشف").setMessage("الصف: $currentClass\nالفترة: $p\nحاضر: $present\nغائب: $absent\nبعذر: $excused").setPositiveButton("حسنًا",null).show()
-                }
-                val clear=Button(this).apply{text="مسح علامات هذا الصف والفترة";isAllCaps=false}
-                studentArea.addView(clear,LinearLayout.LayoutParams(-1,-2)); clear.setOnClickListener {
-                    val p=period.text.toString().trim(); if(p.isEmpty()){toast("اكتب الفترة أولاً");return@setOnClickListener}
-                    AlertDialog.Builder(this).setTitle("تأكيد المسح").setMessage("سيتم مسح علامات الحضور للصف $currentClass والفترة $p فقط، ولن تُحذف أسماء الطلاب أو كشوف الصفوف الأخرى.").setNegativeButton("إلغاء",null).setPositiveButton("مسح العلامات"){_,_->prefs.edit().remove(storageKey()).apply();toast("تم مسح علامات هذه الفترة فقط");render()}.show()
-                }
-            }
-            classSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener { override fun onNothingSelected(parent:AdapterView<*>?) {}; override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long){render()} }
-            addButton("تحديث الكشف حسب الصف والفترة") { render() }
+            root.addView(TextView(this).apply { text="لا توجد صفوف مستوردة بعد. انتقل إلى قاعدة بيانات الطلاب واستورد ورقة Excel لكل صف."; textSize=17f; setPadding(4,8,4,18) }, LinearLayout.LayoutParams(-1,0,1f))
+            addButton("العودة للرئيسية") { showHome() }
+            return
         }
+
+        // The scrolling area contains the roster; the home button stays fixed at the bottom.
+        val scroll=ScrollView(this)
+        val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+        scroll.addView(content)
+        root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
+        content.addView(TextView(this).apply{text="اختر الصف الدراسي:";textSize=16f})
+        val classSpinner=Spinner(this)
+        classSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,classes)
+        content.addView(classSpinner)
+        content.addView(TextView(this).apply{text="الفترة أو الشهر:";textSize=16f})
+        val period=EditText(this).apply{hint="مثال: أكتوبر أو الأسبوع الأول";textSize=17f}
+        content.addView(period)
+        val studentArea=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+        content.addView(studentArea,LinearLayout.LayoutParams(-1,-2))
+        var currentClass=classes.first()
+        var marks=linkedMapOf<String,String>()
+        fun storageKey()="attendance_v2_"+Uri.encode(currentClass)+"_"+Uri.encode(period.text.toString().trim())
+        fun render() {
+            studentArea.removeAllViews()
+            currentClass=classSpinner.selectedItem?.toString() ?: classes.first()
+            val names=classStudentNames(currentClass)
+            studentArea.addView(TextView(this).apply {
+                text="الصف: $currentClass   |   عدد الطلاب: ${names.size}"
+                textSize=17f; setTextColor(green); setPadding(0,10,0,10)
+            })
+            if(names.isEmpty()) {
+                studentArea.addView(TextView(this).apply{text="لا توجد أسماء مرتبطة بهذا الصف. أعد استيراد ورقته من قاعدة البيانات.";textSize=16f})
+                return
+            }
+            marks=linkedMapOf()
+            val saved=prefs.getString(storageKey(),"") ?: ""
+            saved.split("\n").filter{it.contains("|")}.forEach { val pair=it.split("|",limit=2); if(pair.size==2) marks[pair[0]]=pair[1] }
+            names.forEach { name ->
+                val line=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(0,4,0,4)}
+                line.addView(TextView(this).apply{text=name;textSize=16f},LinearLayout.LayoutParams(0,-2,1f))
+                val spinner=Spinner(this)
+                spinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("√ حاضر","غ غائب","م بعذر"))
+                spinner.setSelection(when(marks[name]){"غ"->1;"م"->2;else->0})
+                spinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
+                    override fun onNothingSelected(parent:AdapterView<*>?) {}
+                    override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { marks[name]=listOf("√","غ","م")[position] }
+                }
+                line.addView(spinner,LinearLayout.LayoutParams(145,-2))
+                studentArea.addView(line)
+                studentArea.addView(View(this).apply{setBackgroundColor(Color.LTGRAY)},LinearLayout.LayoutParams(-1,1))
+            }
+            val save=Button(this).apply{text="حفظ كشف هذا الصف والفترة";isAllCaps=false;setTextColor(Color.WHITE);setBackgroundColor(green)}
+            studentArea.addView(save,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,10,0,6)})
+            save.setOnClickListener {
+                val p=period.text.toString().trim()
+                if(p.isEmpty()){toast("اكتب الشهر أو الفترة أولاً");return@setOnClickListener}
+                prefs.edit().putString(storageKey(),names.joinToString("\n"){ "$it|${marks[it] ?: "√"}" }).apply()
+                val values=names.map{marks[it] ?: "√"}
+                AlertDialog.Builder(this).setTitle("تم حفظ الكشف")
+                    .setMessage("الصف: $currentClass\nالفترة: $p\nحاضر: ${values.count{it=="√"}}\nغائب: ${values.count{it=="غ"}}\nبعذر: ${values.count{it=="م"}}")
+                    .setPositiveButton("حسنًا",null).show()
+            }
+            val clear=Button(this).apply{text="مسح علامات هذا الصف والفترة";isAllCaps=false}
+            studentArea.addView(clear,LinearLayout.LayoutParams(-1,-2))
+            clear.setOnClickListener {
+                val p=period.text.toString().trim()
+                if(p.isEmpty()){toast("اكتب الفترة أولاً");return@setOnClickListener}
+                AlertDialog.Builder(this).setTitle("تأكيد المسح")
+                    .setMessage("سيتم مسح علامات الصف $currentClass والفترة $p فقط، دون حذف الأسماء أو كشوف الصفوف الأخرى.")
+                    .setNegativeButton("إلغاء",null)
+                    .setPositiveButton("مسح العلامات"){_,_->prefs.edit().remove(storageKey()).apply();toast("تم مسح علامات هذه الفترة فقط");render()}.show()
+            }
+        }
+        classSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent:AdapterView<*>?) {}
+            override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long){render()}
+        }
+        addButton("تحديث الكشف حسب الصف والفترة") { render() }
         addButton("العودة للرئيسية") { showHome() }
     }
 
