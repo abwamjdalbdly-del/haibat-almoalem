@@ -295,14 +295,238 @@ class MainActivity : Activity() {
         addButton("العودة للرئيسية") { showHome() }
     }
 
+    private data class SubjectInfo(val name: String, val maximum: Int)
+
+    private fun subjectsKey(className: String) = "result_subjects_v1_" + Uri.encode(className)
+    private fun resultGradeKey(className: String, term: String, student: String, subject: String) =
+        "result_grade_v1_${Uri.encode(className)}_${Uri.encode(term)}_${Uri.encode(student)}_${Uri.encode(subject)}"
+
+    private fun subjectsFor(className: String): MutableList<SubjectInfo> {
+        val raw = prefs.getString(subjectsKey(className), "") ?: ""
+        return raw.split("\n").mapNotNull { line ->
+            val parts = line.split("|", limit = 2)
+            if (parts.size != 2) null else {
+                val name = Uri.decode(parts[0]).trim()
+                val maximum = parts[1].toIntOrNull()
+                if (name.isBlank() || maximum == null || maximum < 1) null else SubjectInfo(name, maximum)
+            }
+        }.toMutableList()
+    }
+
+    private fun saveSubjects(className: String, subjects: List<SubjectInfo>) {
+        val raw = subjects.joinToString("\n") { "${Uri.encode(it.name)}|${it.maximum}" }
+        prefs.edit().putString(subjectsKey(className), raw).commit()
+    }
+
     private fun showResults() {
         setup("كشوف التحصيل والنتائج")
-        root.addView(TextView(this).apply {
-            text="سيضاف في المرحلة التالية إدخال درجات المواد، وحساب المجموع والنسبة والتقدير والنجاح والترتيب."
-            textSize=17f; setTextColor(Color.DKGRAY); setPadding(4,8,4,20)
-        })
-        addButton("العودة للرئيسية"){showHome()}
+        val classes = classNames()
+        if (classes.isEmpty()) {
+            root.addView(TextView(this).apply {
+                text = "لا توجد صفوف دراسية بعد. استورد أسماء الطلاب من Excel أولاً من قاعدة بيانات الطلاب."
+                textSize = 17f; setPadding(4, 8, 4, 20)
+            })
+            addButton("العودة للرئيسية") { showHome() }
+            return
+        }
+        root.addView(TextView(this).apply { text = "اختر الصف الدراسي:"; textSize = 16f })
+        val classSpinner = Spinner(this)
+        classSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, classes)
+        root.addView(classSpinner)
+        root.addView(TextView(this).apply { text = "الفصل أو الفترة الدراسية:"; textSize = 16f; setPadding(0, 12, 0, 2) })
+        val termInput = EditText(this).apply { hint = "مثال: الفصل الأول 2026"; textSize = 17f }
+        root.addView(termInput, LinearLayout.LayoutParams(-1, -2))
+        addButton("إدارة المواد الدراسية") {
+            val termClass = classSpinner.selectedItem?.toString() ?: classes.first()
+            manageSubjects(termClass)
+        }
+        addButton("إدخال درجات الطلاب") {
+            val selectedClass = classSpinner.selectedItem?.toString() ?: classes.first()
+            val term = termInput.text.toString().trim()
+            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
+            else enterStudentGrades(selectedClass, term)
+        }
+        addButton("عرض كشف النتائج والترتيب") {
+            val selectedClass = classSpinner.selectedItem?.toString() ?: classes.first()
+            val term = termInput.text.toString().trim()
+            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
+            else showResultsSummary(selectedClass, term)
+        }
+        addButton("العودة للرئيسية") { showHome() }
     }
+
+    private fun manageSubjects(className: String) {
+        val subjects = subjectsFor(className)
+        val labels = subjects.map { "${it.name}  (${it.maximum} درجة)" }.toTypedArray()
+        val options = labels.toMutableList().apply { add("＋ إضافة مادة جديدة") }
+        AlertDialog.Builder(this).setTitle("مواد الصف: $className")
+            .setItems(options.toTypedArray()) { _, which ->
+                if (which == subjects.size) editSubject(className, null)
+                else showSubjectActions(className, subjects[which])
+            }
+            .setNegativeButton("إغلاق", null)
+            .setNeutralButton("إضافة مادة") { _, _ -> editSubject(className, null) }
+            .show()
+    }
+
+    private fun showSubjectActions(className: String, subject: SubjectInfo) {
+        AlertDialog.Builder(this).setTitle(subject.name)
+            .setItems(arrayOf("تعديل المادة والدرجة النهائية", "حذف المادة")) { _, which ->
+                if (which == 0) editSubject(className, subject)
+                else AlertDialog.Builder(this).setTitle("تأكيد حذف المادة")
+                    .setMessage("سيتم حذف مادة ${subject.name} من قائمة مواد الصف. لن تُحذف بقية المواد.")
+                    .setNegativeButton("إلغاء", null)
+                    .setPositiveButton("حذف") { _, _ ->
+                        val prefix = "result_grade_v1_${Uri.encode(className)}_"
+                        val suffix = "_${Uri.encode(subject.name)}"
+                        val editor = prefs.edit()
+                        prefs.all.keys.filter { it.startsWith(prefix) && it.endsWith(suffix) }.forEach { editor.remove(it) }
+                        editor.commit()
+                        saveSubjects(className, subjectsFor(className).filterNot { it.name == subject.name })
+                        toast("تم حذف المادة ودرجاتها المحفوظة لهذا الصف")
+                        manageSubjects(className)
+                    }.show()
+            }.setNegativeButton("رجوع") { _, _ -> manageSubjects(className) }.show()
+    }
+
+    private fun editSubject(className: String, existing: SubjectInfo?) {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(36, 8, 36, 4) }
+        val name = EditText(this).apply { hint = "اسم المادة"; setText(existing?.name ?: ""); textSize = 17f }
+        val maximum = EditText(this).apply {
+            hint = "الدرجة النهائية للمادة"; setText(existing?.maximum?.toString() ?: "100")
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER; textSize = 17f
+        }
+        panel.addView(TextView(this).apply { text = "اسم المادة" }); panel.addView(name)
+        panel.addView(TextView(this).apply { text = "الدرجة النهائية" }); panel.addView(maximum)
+        val dialog = AlertDialog.Builder(this).setTitle(if (existing == null) "إضافة مادة" else "تعديل المادة")
+            .setView(panel).setPositiveButton("حفظ", null).setNegativeButton("إلغاء", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val newName = name.text.toString().trim()
+                val max = maximum.text.toString().toIntOrNull()
+                if (newName.isEmpty() || max == null || max < 1 || max > 10000) {
+                    toast("أدخل اسم المادة ودرجة نهائية صحيحة")
+                    return@setOnClickListener
+                }
+                val current = subjectsFor(className)
+                if (current.any { it.name.equals(newName, true) && it.name != existing?.name }) {
+                    toast("هذه المادة موجودة في الصف بالفعل")
+                    return@setOnClickListener
+                }
+                if (existing != null) {
+                    val index = current.indexOfFirst { it.name == existing.name }
+                    if (index >= 0) current[index] = SubjectInfo(newName, max)
+                    if (newName != existing.name) {
+                        val prefix = "result_grade_v1_${Uri.encode(className)}_"
+                        val oldSuffix = "_${Uri.encode(existing.name)}"
+                        val editor = prefs.edit()
+                        prefs.all.keys.filter { it.startsWith(prefix) && it.endsWith(oldSuffix) }.forEach { oldKey ->
+                            val newKey = oldKey.removeSuffix(oldSuffix) + "_${Uri.encode(newName)}"
+                            prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
+                            editor.remove(oldKey)
+                        }
+                        editor.commit()
+                    }
+                } else current.add(SubjectInfo(newName, max))
+                saveSubjects(className, current)
+                dialog.dismiss()
+                toast("تم حفظ مواد الصف $className")
+                manageSubjects(className)
+            }
+        }
+        dialog.show()
+    }
+
+    private fun enterStudentGrades(className: String, term: String) {
+        val students = classStudentNames(className)
+        val subjects = subjectsFor(className)
+        if (students.isEmpty()) { toast("لا توجد أسماء طلاب مرتبطة بهذا الصف"); return }
+        if (subjects.isEmpty()) { toast("أضف المواد الدراسية لهذا الصف أولاً"); manageSubjects(className); return }
+        AlertDialog.Builder(this).setTitle("اختر الطالب - $className")
+            .setItems(students.toTypedArray()) { _, which -> showStudentGradeEditor(className, term, students[which], subjects) }
+            .setNegativeButton("إلغاء", null).show()
+    }
+
+    private fun showStudentGradeEditor(className: String, term: String, student: String, subjects: List<SubjectInfo>) {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 8, 28, 8) }
+        panel.addView(TextView(this).apply { text = "الطالب: $student\nالصف: $className\nالفترة: $term"; textSize = 17f; setTextColor(green) })
+        val fields = linkedMapOf<SubjectInfo, EditText>()
+        subjects.forEach { subject ->
+            panel.addView(TextView(this).apply { text = "${subject.name} (من ${subject.maximum})"; textSize = 16f; setPadding(0, 10, 0, 0) })
+            val field = EditText(this).apply {
+                hint = "أدخل الدرجة"; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                textSize = 17f
+                val saved = prefs.getString(resultGradeKey(className, term, student, subject.name), "") ?: ""
+                setText(saved)
+            }
+            fields[subject] = field
+            panel.addView(field)
+        }
+        val scroll = ScrollView(this).apply { addView(panel) }
+        val dialog = AlertDialog.Builder(this).setTitle("إدخال الدرجات")
+            .setView(scroll).setPositiveButton("حفظ الدرجات", null).setNegativeButton("إلغاء", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val values = fields.map { (subject, field) -> subject to field.text.toString().trim() }
+                val invalid = values.firstOrNull { (subject, raw) ->
+                    raw.isNotEmpty() && (raw.toDoubleOrNull() == null || raw.toDouble() < 0.0 || raw.toDouble() > subject.maximum)
+                }
+                if (invalid != null) { toast("تحقق من الدرجات؛ يجب ألا تتجاوز الدرجة النهائية لكل مادة"); return@setOnClickListener }
+                val editor = prefs.edit()
+                values.forEach { (subject, raw) ->
+                    val key = resultGradeKey(className, term, student, subject.name)
+                    if (raw.isEmpty()) editor.remove(key) else editor.putString(key, raw)
+                }
+                editor.commit()
+                dialog.dismiss()
+                toast("تم حفظ درجات $student")
+            }
+        }
+        dialog.show()
+    }
+
+    private data class StudentResult(val name: String, val total: Double, val maximum: Int, val entered: Int) {
+        val percentage: Double get() = if (maximum == 0) 0.0 else total * 100.0 / maximum
+    }
+
+    private fun calculateStudentResult(className: String, term: String, student: String, subjects: List<SubjectInfo>): StudentResult {
+        var total = 0.0; var maximum = 0; var entered = 0
+        subjects.forEach { subject ->
+            maximum += subject.maximum
+            val raw = prefs.getString(resultGradeKey(className, term, student, subject.name), null)
+            val grade = raw?.toDoubleOrNull()
+            if (grade != null) { total += grade; entered++ }
+        }
+        return StudentResult(student, total, maximum, entered)
+    }
+
+    private fun showResultsSummary(className: String, term: String) {
+        val students = classStudentNames(className)
+        val subjects = subjectsFor(className)
+        if (students.isEmpty()) { toast("لا توجد أسماء طلاب لهذا الصف"); return }
+        if (subjects.isEmpty()) { toast("أضف المواد الدراسية أولاً"); manageSubjects(className); return }
+        val results = students.map { calculateStudentResult(className, term, it, subjects) }
+            .sortedWith(compareByDescending<StudentResult> { it.percentage }.thenBy { it.name })
+        val maxTotal = subjects.sumOf { it.maximum }
+        val completed = results.filter { it.entered == subjects.size }
+        val lines = results.map { result ->
+            val status = when {
+                result.entered == 0 -> "لم تُدخل درجات"
+                result.entered < subjects.size -> "غير مكتمل (${result.entered}/${subjects.size})"
+                result.percentage >= 50.0 -> "ناجح"
+                else -> "راسب"
+            }
+            val rank = if (result.entered == subjects.size) "${completed.indexOfFirst { it.percentage == result.percentage } + 1}" else "—"
+            "${rank}. ${result.name}\n   المجموع: ${formatGrade(result.total)} / $maxTotal   النسبة: ${String.format(java.util.Locale.US, "%.1f", result.percentage)}%\n   $status"
+        }
+        val message = "الصف: $className\nالفترة: $term\nعدد المواد: ${subjects.size}\nالدرجة الكلية: $maxTotal\n\n" + lines.joinToString("\n\n")
+        val text = TextView(this).apply { this.text = message; textSize = 15f; setPadding(28, 12, 28, 12) }
+        val scroll = ScrollView(this).apply { addView(text) }
+        AlertDialog.Builder(this).setTitle("كشف النتائج والترتيب")
+            .setView(scroll).setPositiveButton("إغلاق", null).show()
+    }
+
+    private fun formatGrade(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(java.util.Locale.US, "%.2f", value)
 
     private fun backupInfo() {
         AlertDialog.Builder(this).setTitle("النسخ الاحتياطي")
