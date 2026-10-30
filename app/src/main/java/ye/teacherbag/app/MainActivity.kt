@@ -54,11 +54,25 @@ class MainActivity : Activity() {
         val clean=names.map{it.trim()}.filter{it.isNotEmpty()}.distinct()
         prefs.edit().putString("students_list_v2",clean.joinToString("\n")).putStringSet("students",clean.toSet()).apply()
     }
-    private fun classNames(): MutableList<String> = prefs.getString("class_names_v1","")!!.split("\n").map{it.trim()}.filter{it.isNotEmpty()}.distinct().toMutableList()
-    private fun saveClassNames(names:List<String>) { prefs.edit().putString("class_names_v1",names.map{it.trim()}.filter{it.isNotEmpty()}.distinct().joinToString("\n")).apply() }
-    private fun classKey(className:String) = "class_students_" + Uri.encode(className)
-    private fun classStudentNames(className:String): MutableList<String> = prefs.getString(classKey(className),"")!!.split("\n").map{it.trim()}.filter{it.isNotEmpty()}.distinct().toMutableList()
-    private fun saveClassStudentNames(className:String,names:List<String>) { prefs.edit().putString(classKey(className),names.map{it.trim()}.filter{it.isNotEmpty()}.distinct().joinToString("\n")).apply() }
+    class MainActivity : Activity() {
+
+    private val green = Color.rgb(23, 107, 85)
+    private val prefs by lazy {
+        getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE)
+    }
+
+    // الدوال الأصلية هنا
+
+    private fun saveStudentNames(names: Set<String>) {
+        // الدالة الأصلية كما هي
+    }
+
+    // ضع الدوال الأربع المعدلة هنا
+
+    private fun showStudents() {
+        // بقية البرنامج
+    }
+}
 
     private fun showStudents() {
         setup("قاعدة بيانات الطلاب")
