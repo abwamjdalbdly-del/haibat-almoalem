@@ -15,87 +15,9 @@ import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.util.zip.ZipInputStream
 
-private fun classNames(): MutableList<String> {
-    val saved = prefs.getString("class_names_v1", "") ?: ""
-    val names = mutableListOf<String>()
-
-    saved.split("\n")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .forEach { name ->
-            if (names.none { it.equals(name, true) }) names.add(name)
-        }
-
-    prefs.all.keys
-        .filter { it.startsWith("class_students_") }
-        .forEach { key ->
-            val name = Uri.decode(
-                key.removePrefix("class_students_")
-            ).trim()
-
-            if (name.isNotEmpty() &&
-                names.none { it.equals(name, true) }) {
-                names.add(name)
-            }
-        }
-
-    prefs.edit()
-        .putString("class_names_v1", names.joinToString("\n"))
-        .apply()
-
-    return names
-}
-
-private fun saveClassNames(names: List<String>) {
-    val clean = names.map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .distinctBy { it.lowercase() }
-
-    prefs.edit()
-        .putString("class_names_v1", clean.joinToString("\n"))
-        .commit()
-}
-
-private fun classKey(className: String) =
-    "class_students_" + Uri.encode(className.trim())
-
-private fun classStudentNames(className: String): MutableList<String> {
-    val saved = prefs.getString(classKey(className), "") ?: ""
-
-    return saved.split("\n")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .distinctBy { it.lowercase() }
-        .toMutableList()
-}
-
-private fun saveClassStudentNames(
-    className: String,
-    names: List<String>
-) {
-    val clean = names.map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .distinctBy { it.lowercase() }
-
-    val classes = classNames()
-
-    if (classes.none { it.equals(className.trim(), true) }) {
-        classes.add(className.trim())
-    }
-
-    prefs.edit()
-        .putString(
-            classKey(className),
-            clean.joinToString("\n")
-        )
-        .putString(
-            "class_names_v1",
-            classes.joinToString("\n")
-        )
-        .commit()
-}
-
-
+class MainActivity : Activity() {
+    private val green = Color.rgb(23, 107, 85)
+    private val prefs by lazy { getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE) }
     private lateinit var root: LinearLayout
     private val pickExcelRequest = 4101
     private data class SheetInfo(val name: String, val path: String)
@@ -108,10 +30,13 @@ private fun saveClassStudentNames(
         root.addView(TextView(this).apply { text=title; textSize=24f; setTextColor(green); gravity=Gravity.CENTER; setPadding(8,18,8,22) })
         setContentView(root)
     }
+
     private fun addButton(label: String, action: () -> Unit) {
         val b=Button(this).apply { text=label; textSize=17f; isAllCaps=false; setTextColor(Color.WHITE); setBackgroundColor(green); setPadding(12,16,12,16) }
-        root.addView(b,LinearLayout.LayoutParams(-1,-2).apply { setMargins(0,7,0,7) }); b.setOnClickListener { action() }
+        root.addView(b,LinearLayout.LayoutParams(-1,-2).apply { setMargins(0,7,0,7) })
+        b.setOnClickListener { action() }
     }
+
     private fun showHome() {
         setup("حقيبة المعلم الشاملة")
         root.addView(TextView(this).apply { text="إدارة مدرسية تعمل دون إنترنت"; textSize=16f; gravity=Gravity.CENTER; setTextColor(Color.DKGRAY); setPadding(4,0,4,20) })
@@ -128,54 +53,88 @@ private fun saveClassStudentNames(
         val old=prefs.getStringSet("students",emptySet())?.toSet() ?: emptySet()
         return (if(saved!=null) saved.split("\n").filter{it.isNotBlank()} else old).toMutableSet()
     }
+
     private fun saveStudentNames(names:Set<String>) {
         val clean=names.map{it.trim()}.filter{it.isNotEmpty()}.distinct()
         prefs.edit().putString("students_list_v2",clean.joinToString("\n")).putStringSet("students",clean.toSet()).apply()
     }
-    class MainActivity : Activity() {
 
-    private val green = Color.rgb(23, 107, 85)
-    private val prefs by lazy {
-        getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE)
+    // إدارة الصفوف واستعادة أسمائها من مفاتيح القوائم المحفوظة.
+    private fun classNames(): MutableList<String> {
+        val saved = prefs.getString("class_names_v1", "") ?: ""
+        val names = mutableListOf<String>()
+        saved.split("\n").map { it.trim() }.filter { it.isNotEmpty() }.forEach { name ->
+            if (names.none { it.equals(name, true) }) names.add(name)
+        }
+        prefs.all.keys.filter { it.startsWith("class_students_") }.forEach { key ->
+            val name = Uri.decode(key.removePrefix("class_students_")).trim()
+            if (name.isNotEmpty() && names.none { it.equals(name, true) }) names.add(name)
+        }
+        prefs.edit().putString("class_names_v1", names.joinToString("\n")).apply()
+        return names
     }
 
-    // الدوال الأصلية هنا
-
-    private fun saveStudentNames(names: Set<String>) {
-        // الدالة الأصلية كما هي
+    private fun saveClassNames(names: List<String>) {
+        val clean = names.map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
+        prefs.edit().putString("class_names_v1", clean.joinToString("\n")).commit()
     }
 
-    // ضع الدوال الأربع المعدلة هنا
+    private fun classKey(className: String) = "class_students_" + Uri.encode(className.trim())
 
-    private fun showStudents() {
-        // بقية البرنامج
+    private fun classStudentNames(className: String): MutableList<String> {
+        val saved = prefs.getString(classKey(className), "") ?: ""
+        return saved.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+            .distinctBy { it.lowercase() }.toMutableList()
     }
-}
+
+    private fun saveClassStudentNames(className: String, names: List<String>) {
+        val clean = names.map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
+        val classes = classNames()
+        if (classes.none { it.equals(className.trim(), true) }) classes.add(className.trim())
+        prefs.edit()
+            .putString(classKey(className), clean.joinToString("\n"))
+            .putString("class_names_v1", classes.joinToString("\n"))
+            .commit()
+    }
 
     private fun showStudents() {
         setup("قاعدة بيانات الطلاب")
-        val input=EditText(this).apply { hint="اكتب اسم الطالب"; textSize=18f }; root.addView(input,LinearLayout.LayoutParams(-1,-2))
+        val input=EditText(this).apply { hint="اكتب اسم الطالب"; textSize=18f }
+        root.addView(input,LinearLayout.LayoutParams(-1,-2))
         addButton("حفظ اسم الطالب") {
             val name=input.text.toString().trim()
             if(name.isEmpty()) toast("اكتب اسم الطالب أولاً") else {
                 val names=studentNames()
-                if(names.any{it.equals(name,true)}) toast("الاسم موجود مسبقًا") else { names.add(name); saveStudentNames(names); input.setText(""); toast("تم حفظ الاسم على الهاتف"); showStudents() }
+                if(names.any{it.equals(name,true)}) toast("الاسم موجود مسبقًا") else {
+                    names.add(name); saveStudentNames(names); input.setText(""); toast("تم حفظ الاسم على الهاتف"); showStudents()
+                }
             }
         }
         addButton("استيراد أسماء الطلاب من Excel") { chooseExcelFile() }
-        addButton("عرض أسماء الطلاب") { val n=studentNames().toList(); AlertDialog.Builder(this).setTitle("أسماء الطلاب").setMessage(if(n.isEmpty())"لا توجد أسماء محفوظة بعد" else n.joinToString("\n")).setPositiveButton("إغلاق",null).show() }
+        addButton("عرض أسماء الطلاب") {
+            val n=studentNames().toList()
+            AlertDialog.Builder(this).setTitle("أسماء الطلاب")
+                .setMessage(if(n.isEmpty())"لا توجد أسماء محفوظة بعد" else n.joinToString("\n"))
+                .setPositiveButton("إغلاق",null).show()
+        }
         addButton("عرض الصفوف وأعداد طلابها") {
-            val cs=classNames(); val msg=if(cs.isEmpty())"لم يتم استيراد صفوف بعد" else cs.joinToString("\n"){ "$it : ${classStudentNames(it).size} طالبًا" }
+            val cs=classNames()
+            val msg=if(cs.isEmpty())"لم يتم استيراد صفوف بعد" else cs.joinToString("\n"){ "$it : ${classStudentNames(it).size} طالبًا" }
             AlertDialog.Builder(this).setTitle("الصفوف الدراسية").setMessage(msg).setPositiveButton("إغلاق",null).show()
         }
         addButton("العودة للرئيسية") { showHome() }
     }
+
     private fun toast(s:String) { Toast.makeText(this,s,Toast.LENGTH_SHORT).show() }
 
     private fun chooseExcelFile() {
-        val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+        val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
         try { startActivityForResult(intent,pickExcelRequest) } catch(e:Exception) { showError("تعذر فتح نافذة اختيار الملفات.") }
     }
+
     @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
         super.onActivityResult(requestCode,resultCode,data)
@@ -185,30 +144,42 @@ private fun saveClassStudentNames(
             catch(e:Exception) { showError("تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور.") }
         }
     }
+
     private fun chooseSheet(book:ExcelBook) {
-        AlertDialog.Builder(this).setTitle("اختر الصف / ورقة العمل").setItems(book.sheets.map{it.name}.toTypedArray()) { _,which -> showImportOptions(book,book.sheets[which]) }.setNegativeButton("إلغاء",null).show()
+        AlertDialog.Builder(this).setTitle("اختر الصف / ورقة العمل")
+            .setItems(book.sheets.map{it.name}.toTypedArray()) { _,which -> showImportOptions(book,book.sheets[which]) }
+            .setNegativeButton("إلغاء",null).show()
     }
+
     private fun showImportOptions(book:ExcelBook,sheet:SheetInfo) {
         val panel=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(40,12,40,4) }
         val column=EditText(this).apply { hint="عمود الأسماء (B)"; setText("B"); textSize=17f; inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS }
         val first=EditText(this).apply { hint="أول صف"; setText("5"); inputType=android.text.InputType.TYPE_CLASS_NUMBER }
         val last=EditText(this).apply { hint="آخر صف"; setText("36"); inputType=android.text.InputType.TYPE_CLASS_NUMBER }
-        panel.addView(TextView(this).apply{text="سيُسجل اسم الورقة صفًا دراسيًا: ${sheet.name}";textSize=16f}); panel.addView(TextView(this).apply{text="حرف عمود الأسماء:"}); panel.addView(column); panel.addView(TextView(this).apply{text="أول صف:"}); panel.addView(first); panel.addView(TextView(this).apply{text="آخر صف:"}); panel.addView(last)
-        val dialog=AlertDialog.Builder(this).setTitle("إعدادات استيراد الأسماء").setView(panel).setPositiveButton("معاينة الأسماء",null).setNegativeButton("إلغاء",null).create()
+        panel.addView(TextView(this).apply{text="سيُسجل اسم الورقة صفًا دراسيًا: ${sheet.name}";textSize=16f})
+        panel.addView(TextView(this).apply{text="حرف عمود الأسماء:"}); panel.addView(column)
+        panel.addView(TextView(this).apply{text="أول صف:"}); panel.addView(first)
+        panel.addView(TextView(this).apply{text="آخر صف:"}); panel.addView(last)
+        val dialog=AlertDialog.Builder(this).setTitle("إعدادات استيراد الأسماء").setView(panel)
+            .setPositiveButton("معاينة الأسماء",null).setNegativeButton("إلغاء",null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val col=column.text.toString().trim().uppercase(); val f=first.text.toString().toIntOrNull(); val l=last.text.toString().toIntOrNull()
-            if(!col.matches(Regex("[A-Z]{1,3}")) || f==null || l==null || f<1 || l<f || l-f>5000) { toast("تحقق من حرف العمود وأرقام الصفوف."); return@setOnClickListener }
-            try { val extracted=readNamesFromSheet(book,sheet,columnNumber(col),f,l); dialog.dismiss(); previewNames(extracted,sheet.name) } catch(e:Exception) { showError("تعذر قراءة الأسماء من ورقة العمل المختارة.") }
-        } }; dialog.show()
+            val col=column.text.toString().trim().uppercase()
+            val f=first.text.toString().toIntOrNull(); val l=last.text.toString().toIntOrNull()
+            if(!col.matches(Regex("[A-Z]{1,3}")) || f==null || l==null || f<1 || l<f || l-f>5000) {
+                toast("تحقق من حرف العمود وأرقام الصفوف."); return@setOnClickListener
+            }
+            try {
+                val extracted=readNamesFromSheet(book,sheet,columnNumber(col),f,l)
+                dialog.dismiss(); previewNames(extracted,sheet.name)
+            } catch(e:Exception) { showError("تعذر قراءة الأسماء من ورقة العمل المختارة.") }
+        } }
+        dialog.show()
     }
+
     private fun normalizeName(name:String)=name.trim().replace(Regex("\\s+")," ").lowercase()
+
     private fun previewNames(rawNames:List<String>,className:String) {
-        // Import the selected worksheet as the authoritative roster for this class.
-        // Do not compare it with the global student list: that caused existing global
-        // names to be incorrectly treated as already assigned to this class.
-        val clean=mutableListOf<String>()
-        val seen=mutableSetOf<String>()
-        var duplicates=0
+        val clean=mutableListOf<String>(); val seen=mutableSetOf<String>(); var duplicates=0
         for(raw in rawNames) {
             val name=raw.trim().replace(Regex("\\s+")," ")
             if(name.isEmpty()) continue
@@ -224,33 +195,29 @@ private fun saveClassStudentNames(
             "عدد الأسماء المرتبطة بالصف حاليًا: $oldCount\n\n"+
             clean.take(100).joinToString("\n")+
             if(clean.size>100) "\n... وبقية الأسماء (${clean.size-100})" else ""
-        AlertDialog.Builder(this).setTitle("معاينة أسماء الصف")
-            .setMessage(preview)
+        AlertDialog.Builder(this).setTitle("معاينة أسماء الصف").setMessage(preview)
             .setPositiveButton("اعتماد القائمة وتحديث الصف") { _,_ ->
-                // Replace only this class roster. Other classes and attendance keys remain untouched.
                 saveClassStudentNames(className,clean)
                 val classes=classNames()
                 if(classes.none{it.equals(className,true)}) { classes.add(className); saveClassNames(classes) }
-                val all=studentNames()
-                all.addAll(clean)
-                saveStudentNames(all)
+                val all=studentNames(); all.addAll(clean); saveStudentNames(all)
                 AlertDialog.Builder(this).setTitle("تم تحديث الصف")
                     .setMessage("تم ربط ${clean.size} طالبًا بالصف $className.\nلم تُحذف أسماء القاعدة العامة أو بيانات الصفوف الأخرى.\nالمكرر داخل الملف: $duplicates")
                     .setPositiveButton("حسنًا") { _,_->showStudents() }.show()
-            }
-            .setNegativeButton("إلغاء",null).show()
+            }.setNegativeButton("إلغاء",null).show()
     }
 
     private fun showAttendance() {
         setup("كشف الحضور والغياب")
         val classes=classNames()
         if(classes.isEmpty()) {
-            root.addView(TextView(this).apply { text="لا توجد صفوف مستوردة بعد. انتقل إلى قاعدة بيانات الطلاب واستورد ورقة Excel لكل صف."; textSize=17f; setPadding(4,8,4,18) }, LinearLayout.LayoutParams(-1,0,1f))
+            root.addView(TextView(this).apply {
+                text="لا توجد صفوف مستوردة بعد. انتقل إلى قاعدة بيانات الطلاب واستورد ورقة Excel لكل صف."
+                textSize=17f; setPadding(4,8,4,18)
+            },LinearLayout.LayoutParams(-1,0,1f))
             addButton("العودة للرئيسية") { showHome() }
             return
         }
-
-        // The scrolling area contains the roster; the home button stays fixed at the bottom.
         val scroll=ScrollView(this)
         val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
         scroll.addView(content)
@@ -281,7 +248,9 @@ private fun saveClassStudentNames(
             }
             marks=linkedMapOf()
             val saved=prefs.getString(storageKey(),"") ?: ""
-            saved.split("\n").filter{it.contains("|")}.forEach { val pair=it.split("|",limit=2); if(pair.size==2) marks[pair[0]]=pair[1] }
+            saved.split("\n").filter{it.contains("|")}.forEach {
+                val pair=it.split("|",limit=2); if(pair.size==2) marks[pair[0]]=pair[1]
+            }
             names.forEach { name ->
                 val line=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(0,4,0,4)}
                 line.addView(TextView(this).apply{text=name;textSize=16f},LinearLayout.LayoutParams(0,-2,1f))
@@ -326,27 +295,159 @@ private fun saveClassStudentNames(
         addButton("العودة للرئيسية") { showHome() }
     }
 
-    private fun showResults() { setup("كشوف التحصيل والنتائج"); root.addView(TextView(this).apply{text="سيضاف في المرحلة التالية إدخال درجات المواد، وحساب المجموع والنسبة والتقدير والنجاح والترتيب.";textSize=17f;setTextColor(Color.DKGRAY);setPadding(4,8,4,20)}); addButton("العودة للرئيسية"){showHome()} }
-    private fun backupInfo() { AlertDialog.Builder(this).setTitle("النسخ الاحتياطي").setMessage("البيانات محفوظة محليًا على الهاتف في هذه النسخة الأولية. سنضيف تصدير واستعادة نسخة احتياطية لاحقًا.").setPositiveButton("حسنًا",null).show() }
-    private fun showError(message:String) { AlertDialog.Builder(this).setTitle("تنبيه").setMessage(message).setPositiveButton("حسنًا",null).show() }
-
-    private fun columnNumber(letters:String):Int { var value=0; for(c in letters) value=value*26+(c-'A'+1); return value }
-    private fun readWorkbook(uri:Uri):ExcelBook {
-        val entries=linkedMapOf<String,ByteArray>(); contentResolver.openInputStream(uri).use { input -> requireNotNull(input); ZipInputStream(input).use { zip -> while(true){val e=zip.nextEntry?:break; if(!e.isDirectory){val out=java.io.ByteArrayOutputStream();zip.copyTo(out);entries[e.name]=out.toByteArray()};zip.closeEntry()} } }
-        val wb=entries["xl/workbook.xml"]?:error("Not xlsx"); val rel=entries["xl/_rels/workbook.xml.rels"]?:error("No rels"); val rels=parseRelationships(rel)
-        val sheets=parseSheetNames(wb).mapNotNull{(name,id)-> val target=rels[id]?:return@mapNotNull null; val path=normalizeSheetPath(target); if(entries.containsKey(path)) SheetInfo(name,path) else null }
-        val strings=entries["xl/sharedStrings.xml"]?.let{parseSharedStrings(it)}?:emptyList(); return ExcelBook(entries,sheets,strings)
+    private fun showResults() {
+        setup("كشوف التحصيل والنتائج")
+        root.addView(TextView(this).apply {
+            text="سيضاف في المرحلة التالية إدخال درجات المواد، وحساب المجموع والنسبة والتقدير والنجاح والترتيب."
+            textSize=17f; setTextColor(Color.DKGRAY); setPadding(4,8,4,20)
+        })
+        addButton("العودة للرئيسية"){showHome()}
     }
-    private fun parseRelationships(bytes:ByteArray):Map<String,String> { val p=Xml.newPullParser();p.setInput(ByteArrayInputStream(bytes),"UTF-8");val r=mutableMapOf<String,String>();var e=p.eventType;while(e!=XmlPullParser.END_DOCUMENT){if(e==XmlPullParser.START_TAG&&p.name=="Relationship"){val id=p.getAttributeValue(null,"Id");val t=p.getAttributeValue(null,"Target");if(id!=null&&t!=null)r[id]=t};e=p.next()};return r }
-    private fun normalizeSheetPath(target:String):String { val c=target.replace("\\","/");return when{c.startsWith("/")->c.removePrefix("/");c.startsWith("xl/")->c;else->"xl/$c"} }
-    private fun parseSheetNames(bytes:ByteArray):List<Pair<String,String>> { val p=Xml.newPullParser();p.setInput(ByteArrayInputStream(bytes),"UTF-8");val r=mutableListOf<Pair<String,String>>();var e=p.eventType;while(e!=XmlPullParser.END_DOCUMENT){if(e==XmlPullParser.START_TAG&&p.name=="sheet"){val n=p.getAttributeValue(null,"name");val id=p.getAttributeValue("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")?:findAttributeBySuffix(p,"id");if(n!=null&&id!=null)r.add(n to id)};e=p.next()};return r }
-    private fun findAttributeBySuffix(p:XmlPullParser,suffix:String):String? { for(i in 0 until p.attributeCount) if(p.getAttributeName(i).endsWith(":$suffix")||p.getAttributeName(i)==suffix)return p.getAttributeValue(i);return null }
-    private fun parseSharedStrings(bytes:ByteArray):List<String> { val p=Xml.newPullParser();p.setInput(ByteArrayInputStream(bytes),"UTF-8");val r=mutableListOf<String>();var inItem=false;val current=StringBuilder();var e=p.eventType;while(e!=XmlPullParser.END_DOCUMENT){when(e){XmlPullParser.START_TAG->if(p.name=="si"){inItem=true;current.setLength(0)}else if(inItem&&p.name=="t")current.append(readText(p));XmlPullParser.END_TAG->if(p.name=="si"&&inItem){r.add(current.toString());inItem=false}};e=p.next()};return r }
-    private fun readText(p:XmlPullParser):String { val out=StringBuilder();var e=p.next();while(e!=XmlPullParser.END_DOCUMENT){if(e==XmlPullParser.TEXT||e==XmlPullParser.CDSECT)out.append(p.text);if(e==XmlPullParser.END_TAG&&p.name=="t")break;e=p.next()};return out.toString() }
-    private fun columnFromCellReference(ref:String):Int { var v=0;for(c in ref.takeWhile{it.isLetter()}.uppercase())v=v*26+(c-'A'+1);return v }
+
+    private fun backupInfo() {
+        AlertDialog.Builder(this).setTitle("النسخ الاحتياطي")
+            .setMessage("البيانات محفوظة محليًا على الهاتف في هذه النسخة الأولية. سنضيف تصدير واستعادة نسخة احتياطية لاحقًا.")
+            .setPositiveButton("حسنًا",null).show()
+    }
+
+    private fun showError(message:String) {
+        AlertDialog.Builder(this).setTitle("تنبيه").setMessage(message).setPositiveButton("حسنًا",null).show()
+    }
+
+    private fun columnNumber(letters:String):Int {
+        var value=0
+        for(c in letters) value=value*26+(c-'A'+1)
+        return value
+    }
+
+    private fun readWorkbook(uri:Uri):ExcelBook {
+        val entries=linkedMapOf<String,ByteArray>()
+        contentResolver.openInputStream(uri).use { input ->
+            requireNotNull(input)
+            ZipInputStream(input).use { zip ->
+                while(true) {
+                    val e=zip.nextEntry?:break
+                    if(!e.isDirectory) {
+                        val out=java.io.ByteArrayOutputStream()
+                        zip.copyTo(out)
+                        entries[e.name]=out.toByteArray()
+                    }
+                    zip.closeEntry()
+                }
+            }
+        }
+        val wb=entries["xl/workbook.xml"]?:error("Not xlsx")
+        val rel=entries["xl/_rels/workbook.xml.rels"]?:error("No rels")
+        val rels=parseRelationships(rel)
+        val sheets=parseSheetNames(wb).mapNotNull { (name,id) ->
+            val target=rels[id]?:return@mapNotNull null
+            val path=normalizeSheetPath(target)
+            if(entries.containsKey(path)) SheetInfo(name,path) else null
+        }
+        val strings=entries["xl/sharedStrings.xml"]?.let{parseSharedStrings(it)}?:emptyList()
+        return ExcelBook(entries,sheets,strings)
+    }
+
+    private fun parseRelationships(bytes:ByteArray):Map<String,String> {
+        val p=Xml.newPullParser(); p.setInput(ByteArrayInputStream(bytes),"UTF-8")
+        val r=mutableMapOf<String,String>(); var e=p.eventType
+        while(e!=XmlPullParser.END_DOCUMENT) {
+            if(e==XmlPullParser.START_TAG&&p.name=="Relationship") {
+                val id=p.getAttributeValue(null,"Id"); val t=p.getAttributeValue(null,"Target")
+                if(id!=null&&t!=null) r[id]=t
+            }
+            e=p.next()
+        }
+        return r
+    }
+
+    private fun normalizeSheetPath(target:String):String {
+        val c=target.replace("\\","/")
+        return when { c.startsWith("/") -> c.removePrefix("/"); c.startsWith("xl/") -> c; else -> "xl/$c" }
+    }
+
+    private fun parseSheetNames(bytes:ByteArray):List<Pair<String,String>> {
+        val p=Xml.newPullParser(); p.setInput(ByteArrayInputStream(bytes),"UTF-8")
+        val r=mutableListOf<Pair<String,String>>(); var e=p.eventType
+        while(e!=XmlPullParser.END_DOCUMENT) {
+            if(e==XmlPullParser.START_TAG&&p.name=="sheet") {
+                val n=p.getAttributeValue(null,"name")
+                val id=p.getAttributeValue("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")?:findAttributeBySuffix(p,"id")
+                if(n!=null&&id!=null) r.add(n to id)
+            }
+            e=p.next()
+        }
+        return r
+    }
+
+    private fun findAttributeBySuffix(p:XmlPullParser,suffix:String):String? {
+        for(i in 0 until p.attributeCount) if(p.getAttributeName(i).endsWith(":$suffix")||p.getAttributeName(i)==suffix) return p.getAttributeValue(i)
+        return null
+    }
+
+    private fun parseSharedStrings(bytes:ByteArray):List<String> {
+        val p=Xml.newPullParser(); p.setInput(ByteArrayInputStream(bytes),"UTF-8")
+        val r=mutableListOf<String>(); var inItem=false; val current=StringBuilder(); var e=p.eventType
+        while(e!=XmlPullParser.END_DOCUMENT) {
+            when(e) {
+                XmlPullParser.START_TAG -> if(p.name=="si") { inItem=true; current.setLength(0) } else if(inItem&&p.name=="t") current.append(readText(p))
+                XmlPullParser.END_TAG -> if(p.name=="si"&&inItem) { r.add(current.toString()); inItem=false }
+            }
+            e=p.next()
+        }
+        return r
+    }
+
+    private fun readText(p:XmlPullParser):String {
+        val out=StringBuilder(); var e=p.next()
+        while(e!=XmlPullParser.END_DOCUMENT) {
+            if(e==XmlPullParser.TEXT||e==XmlPullParser.CDSECT) out.append(p.text)
+            if(e==XmlPullParser.END_TAG&&p.name=="t") break
+            e=p.next()
+        }
+        return out.toString()
+    }
+
+    private fun columnFromCellReference(ref:String):Int {
+        var v=0
+        for(c in ref.takeWhile{it.isLetter()}.uppercase()) v=v*26+(c-'A'+1)
+        return v
+    }
+
     private fun readNamesFromSheet(book:ExcelBook,sheet:SheetInfo,column:Int,firstRow:Int,lastRow:Int):List<String> {
-        val bytes=book.entries[sheet.path]?:error("Missing sheet");val p=Xml.newPullParser();p.setInput(ByteArrayInputStream(bytes),"UTF-8");val result=mutableMapOf<Int,String>();var row=-1;var col=-1;var type:String?=null;val value=StringBuilder();var target=false;var inValue=false;var inline=false;var e=p.eventType
-        while(e!=XmlPullParser.END_DOCUMENT){when(e){XmlPullParser.START_TAG->when(p.name){"row"->row=p.getAttributeValue(null,"r")?.toIntOrNull()?:-1;"c"->{col=columnFromCellReference(p.getAttributeValue(null,"r")?:"");type=p.getAttributeValue(null,"t");value.setLength(0);target=row in firstRow..lastRow&&col==column};"v"->inValue=target;"t"->inline=target&&type=="inlineStr"};XmlPullParser.TEXT,XmlPullParser.CDSECT->if(target&&(inValue||inline))value.append(p.text);XmlPullParser.END_TAG->when(p.name){"v"->inValue=false;"t"->inline=false;"c"->{if(target){val raw=value.toString().trim();val text=if(type=="s")raw.toIntOrNull()?.let{book.sharedStrings.getOrNull(it)}?:"" else raw;if(text.isNotBlank())result[row]=text.trim()};target=false;inValue=false;inline=false}}};e=p.next()}
+        val bytes=book.entries[sheet.path]?:error("Missing sheet")
+        val p=Xml.newPullParser(); p.setInput(ByteArrayInputStream(bytes),"UTF-8")
+        val result=mutableMapOf<Int,String>()
+        var row=-1; var col=-1; var type:String?=null; val value=StringBuilder()
+        var target=false; var inValue=false; var inline=false; var e=p.eventType
+        while(e!=XmlPullParser.END_DOCUMENT) {
+            when(e) {
+                XmlPullParser.START_TAG -> when(p.name) {
+                    "row" -> row=p.getAttributeValue(null,"r")?.toIntOrNull()?:-1
+                    "c" -> {
+                        col=columnFromCellReference(p.getAttributeValue(null,"r")?:"")
+                        type=p.getAttributeValue(null,"t"); value.setLength(0)
+                        target=row in firstRow..lastRow&&col==column
+                    }
+                    "v" -> inValue=target
+                    "t" -> inline=target&&type=="inlineStr"
+                }
+                XmlPullParser.TEXT,XmlPullParser.CDSECT -> if(target&&(inValue||inline)) value.append(p.text)
+                XmlPullParser.END_TAG -> when(p.name) {
+                    "v" -> inValue=false
+                    "t" -> inline=false
+                    "c" -> {
+                        if(target) {
+                            val raw=value.toString().trim()
+                            val text=if(type=="s") raw.toIntOrNull()?.let{book.sharedStrings.getOrNull(it)}?:"" else raw
+                            if(text.isNotBlank()) result[row]=text.trim()
+                        }
+                        target=false; inValue=false; inline=false
+                    }
+                }
+            }
+            e=p.next()
+        }
         return (firstRow..lastRow).mapNotNull{result[it]}
     }
 }
