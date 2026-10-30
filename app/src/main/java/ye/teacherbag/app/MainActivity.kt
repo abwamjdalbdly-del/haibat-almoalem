@@ -475,12 +475,12 @@ class MainActivity : Activity() {
             val total = marks.filterNotNull().sumOf { it.total }
             val average = if (entered == subjects.size) total / subjects.size / 5.0 else 0.0
             StudentResult(student, total, average, entered, subjects.size)
-        }.sortedWith(compareByDescending<StudentResult> { it.entered == it.subjectCount }.thenByDescending { it.total }.thenBy { it.name })
-        val completed = rows.filter { it.entered == it.subjectCount }
+        }.sortedWith(compareByDescending<StudentResult> { it.enteredSubjects == it.subjectCount }.thenByDescending { it.total }.thenBy { it.name })
+        val completed = rows.filter { it.enteredSubjects == it.subjectCount }
         val lines = rows.map { result ->
-            val rank = if (result.entered == result.subjectCount) completed.takeWhile { it.total > result.total }.size + 1 else 0
-            val status = if (result.entered == result.subjectCount) "مكتمل" else "غير مكتمل (${result.entered}/${result.subjectCount} مادة)"
-            "${if (rank == 0) "—" else rank}. ${result.name}\n   مجموع المواد: ${formatGrade(result.total)} / ${100 * subjects.size}\n   المتوسط العام: ${if (result.entered == result.subjectCount) formatGrade(result.average20) else "—"} من 20\n   $status"
+            val rank = if (result.enteredSubjects == result.subjectCount) completed.takeWhile { it.total > result.total }.size + 1 else 0
+            val status = if (result.enteredSubjects == result.subjectCount) "مكتمل" else "غير مكتمل (${result.enteredSubjects}/${result.subjectCount} مادة)"
+            "${if (rank == 0) "—" else rank}. ${result.name}\n   مجموع المواد: ${formatGrade(result.total)} / ${100 * subjects.size}\n   المتوسط العام: ${if (result.enteredSubjects == result.subjectCount) formatGrade(result.average20) else "—"} من 20\n   $status"
         }
         val subjectLines = subjects.joinToString("\n") { "${it.name}: واجبات 20 + مواظبة 20 + شفهي 20 + تحريري 40 = 100 (المتوسط من 20)" }
         val message = "الصف: $className\nالفترة: $term\n\nتوزيع درجات كل مادة:\n$subjectLines\n\nنتائج الطلاب:\n\n" + lines.joinToString("\n\n")
@@ -638,3 +638,7 @@ class MainActivity : Activity() {
         return (firstRow..lastRow).mapNotNull{result[it]}
     }
 }
+                        target=row in firstRow..lastRow&&col==column
+                    }
+                    "v" -> inValue=target
+                    "t" -> inline=target&&type==
