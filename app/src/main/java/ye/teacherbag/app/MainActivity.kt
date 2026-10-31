@@ -238,8 +238,21 @@ class MainActivity : Activity() {
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             minimumWidth = resources.displayMetrics.widthPixels
         }
-        horizontal.addView(area, HorizontalScrollView.LayoutParams(-2, -2))
-        scroll.addView(horizontal, ScrollView.LayoutParams(-1, -2))
+        horizontal.addView(
+    area,
+    ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    )
+)
+
+scroll.addView(
+    horizontal,
+    ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    )
+)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         var marks = linkedMapOf<String, MutableList<String>>()
         fun key(): String = "attendance_grid_v1_${Uri.encode(classSpinner.selectedItem?.toString() ?: classes.first())}_${monthSpinner.selectedItemPosition}_${weekSpinner.selectedItemPosition}"
