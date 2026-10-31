@@ -226,9 +226,21 @@ class MainActivity : Activity() {
         val weekSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الأسبوع الأول", "الأسبوع الثاني", "الأسبوع الثالث", "الأسبوع الرابع", "الأسبوع الخامس")) }
         controls.addView(weekSpinner)
         val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
+        // تمرير رأسي للكشف، وداخله تمرير أفقي حتى لا تختفي خانة اسم الطالب
+        // عندما يتجاوز مجموع أعمدة الأيام عرض شاشة الهاتف.
         val scroll = ScrollView(this)
-        val area = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
-        scroll.addView(area); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        val horizontal = HorizontalScrollView(this).apply {
+            isFillViewport = true
+            isHorizontalScrollBarEnabled = true
+        }
+        val area = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            minimumWidth = resources.displayMetrics.widthPixels
+        }
+        horizontal.addView(area, HorizontalScrollView.LayoutParams(-2, -2))
+        scroll.addView(horizontal, ScrollView.LayoutParams(-1, -2))
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         var marks = linkedMapOf<String, MutableList<String>>()
         fun key(): String = "attendance_grid_v1_${Uri.encode(classSpinner.selectedItem?.toString() ?: classes.first())}_${monthSpinner.selectedItemPosition}_${weekSpinner.selectedItemPosition}"
         fun render() {
@@ -244,12 +256,12 @@ class MainActivity : Activity() {
             }
             names.forEach { if (marks[it] == null) marks[it] = MutableList(days.size) { "" } }
             val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
-            header.addView(TextView(this).apply { text = "اسم الطالب"; gravity = Gravity.CENTER; textSize = 13f; setTextColor(Color.WHITE); setBackgroundColor(green) }, LinearLayout.LayoutParams(0, 58, 2.2f))
+            header.addView(TextView(this).apply { text = "اسم الطالب"; gravity = Gravity.CENTER; textSize = 13f; setTextColor(Color.WHITE); setBackgroundColor(green) }, LinearLayout.LayoutParams(170, 58))
             days.forEach { day -> header.addView(TextView(this).apply { text = day; gravity = Gravity.CENTER; textSize = 11f; setTextColor(Color.WHITE); setBackgroundColor(green) }, LinearLayout.LayoutParams(46, 58)) }
             area.addView(header)
             names.forEachIndexed { index, name ->
                 val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
-                row.addView(TextView(this).apply { text = name; gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT; textSize = 14f; setPadding(6, 4, 6, 4); setBackgroundColor(if (index % 2 == 0) Color.rgb(238, 245, 242) else Color.WHITE) }, LinearLayout.LayoutParams(0, 52, 2.2f))
+                row.addView(TextView(this).apply { text = name; gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT; textSize = 15f; maxLines = 2; setPadding(8, 4, 8, 4); setBackgroundColor(if (index % 2 == 0) Color.rgb(238, 245, 242) else Color.WHITE) }, LinearLayout.LayoutParams(170, 52))
                 val values = marks[name] ?: MutableList(days.size) { "" }
                 days.forEachIndexed { dayIndex, _ ->
                     val cell = TextView(this).apply {
