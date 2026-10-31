@@ -208,90 +208,79 @@ class MainActivity : Activity() {
     }
 
     private fun showAttendance() {
-        setup("كشف الحضور والغياب")
-        val classes=classNames()
-        if(classes.isEmpty()) {
-            root.addView(TextView(this).apply {
-                text="لا توجد صفوف مستوردة بعد. انتقل إلى قاعدة بيانات الطلاب واستورد ورقة Excel لكل صف."
-                textSize=17f; setPadding(4,8,4,18)
-            },LinearLayout.LayoutParams(-1,0,1f))
-            addButton("العودة للرئيسية") { showHome() }
-            return
+        setup("الحضور والغياب")
+        val classes = classNames()
+        if (classes.isEmpty()) {
+            root.addView(TextView(this).apply { text = "لا توجد صفوف مستوردة. استورد أسماء الطلاب من قاعدة البيانات أولاً."; textSize = 17f })
+            addButton("العودة للرئيسية") { showHome() }; return
         }
-        val scroll=ScrollView(this)
-        val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
-        scroll.addView(content)
-        root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
-        content.addView(TextView(this).apply{text="اختر الصف الدراسي:";textSize=16f})
-        val classSpinner=Spinner(this)
-        classSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,classes)
-        content.addView(classSpinner)
-        content.addView(TextView(this).apply{text="الفترة أو الشهر:";textSize=16f})
-        val period=EditText(this).apply{hint="مثال: أكتوبر أو الأسبوع الأول";textSize=17f}
-        content.addView(period)
-        val studentArea=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
-        content.addView(studentArea,LinearLayout.LayoutParams(-1,-2))
-        var currentClass=classes.first()
-        var marks=linkedMapOf<String,String>()
-        fun storageKey()="attendance_v2_"+Uri.encode(currentClass)+"_"+Uri.encode(period.text.toString().trim())
+        val classSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, classes) }
+        val months = listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")
+        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, months) }
+        val weekSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, (1..4).map { "الأسبوع: $it" }) }
+        fun label(t: String) { root.addView(TextView(this).apply { text=t; textSize=16f; setTextColor(green); setPadding(0,8,0,3) }) }
+        label("الصف الدراسي"); root.addView(classSpinner)
+        label("الشهر"); root.addView(monthSpinner)
+        label("الأسبوع"); root.addView(weekSpinner)
+        val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
+        val area = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+        val scroller = HorizontalScrollView(this).apply { addView(area) }
+        root.addView(scroller, LinearLayout.LayoutParams(-1,0,1f))
+        fun key(cls:String, month:String, week:String) = "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
         fun render() {
-            studentArea.removeAllViews()
-            currentClass=classSpinner.selectedItem?.toString() ?: classes.first()
-            val names=classStudentNames(currentClass)
-            studentArea.addView(TextView(this).apply {
-                text="الصف: $currentClass   |   عدد الطلاب: ${names.size}"
-                textSize=17f; setTextColor(green); setPadding(0,10,0,10)
-            })
-            if(names.isEmpty()) {
-                studentArea.addView(TextView(this).apply{text="لا توجد أسماء مرتبطة بهذا الصف. أعد استيراد ورقته من قاعدة البيانات.";textSize=16f})
-                return
-            }
-            marks=linkedMapOf()
-            val saved=prefs.getString(storageKey(),"") ?: ""
-            saved.split("\n").filter{it.contains("|")}.forEach {
-                val pair=it.split("|",limit=2); if(pair.size==2) marks[pair[0]]=pair[1]
-            }
-            names.forEach { name ->
-                val line=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(0,4,0,4)}
-                line.addView(TextView(this).apply{text=name;textSize=16f},LinearLayout.LayoutParams(0,-2,1f))
-                val spinner=Spinner(this)
-                spinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("√ حاضر","غ غائب","م بعذر"))
-                spinner.setSelection(when(marks[name]){"غ"->1;"م"->2;else->0})
-                spinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
-                    override fun onNothingSelected(parent:AdapterView<*>?) {}
-                    override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { marks[name]=listOf("√","غ","م")[position] }
+            area.removeAllViews()
+            val cls=classSpinner.selectedItem?.toString() ?: classes.first()
+            val month=monthSpinner.selectedItem?.toString() ?: months.first()
+            val week=weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
+            val names=classStudentNames(cls)
+            val saved=(prefs.getString(key(cls,month,week),"") ?: "").split("\n").filter{it.contains("|")}.associate { val a=it.split("|"); a[0] to a.getOrElse(1){""} }
+            val table=TableLayout(this).apply { isStretchAllColumns=true }
+            val header=TableRow(this)
+            listOf("اسم الطالب") .plus(days).forEach { h -> header.addView(TextView(this).apply { text=h; textSize=13f; gravity=Gravity.CENTER; setTextColor(Color.WHITE); setBackgroundColor(green); setPadding(7,12,7,12) }) }
+            table.addView(header)
+            val values=linkedMapOf<String,MutableList<String>>()
+            names.forEachIndexed { index,name ->
+                val row=TableRow(this)
+                row.addView(TextView(this).apply { text="${index+1}. $name"; textSize=14f; setPadding(8,10,8,10); setTextColor(Color.BLACK) })
+                val old=saved[name]?.split(",") ?: emptyList()
+                val dayValues=MutableList(6){i->old.getOrElse(i){""}}
+                values[name]=dayValues
+                days.indices.forEach { d ->
+                    val sp=Spinner(this)
+                    sp.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("—","✓","غ","م"))
+                    sp.setSelection(when(dayValues[d]){"✓"->1;"غ"->2;"م"->3;else->0})
+                    sp.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
+                        override fun onNothingSelected(parent:AdapterView<*>?) {}
+                        override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { dayValues[d]=listOf("","✓","غ","م")[position] }
+                    }
+                    row.addView(sp,TableRow.LayoutParams(100,-2))
                 }
-                line.addView(spinner,LinearLayout.LayoutParams(145,-2))
-                studentArea.addView(line)
-                studentArea.addView(View(this).apply{setBackgroundColor(Color.LTGRAY)},LinearLayout.LayoutParams(-1,1))
+                table.addView(row)
+                table.addView(TableRow(this).apply { addView(View(this@MainActivity).apply { setBackgroundColor(Color.LTGRAY) },TableRow.LayoutParams(-1,1)) })
             }
-            val save=Button(this).apply{text="حفظ كشف هذا الصف والفترة";isAllCaps=false;setTextColor(Color.WHITE);setBackgroundColor(green)}
-            studentArea.addView(save,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,10,0,6)})
+            area.addView(table)
+            val save=Button(this).apply { text="حفظ سجل الأسبوع"; isAllCaps=false; setTextColor(Color.WHITE); setBackgroundColor(green) }
+            area.addView(save,LinearLayout.LayoutParams(-1,-2))
             save.setOnClickListener {
-                val p=period.text.toString().trim()
-                if(p.isEmpty()){toast("اكتب الشهر أو الفترة أولاً");return@setOnClickListener}
-                prefs.edit().putString(storageKey(),names.joinToString("\n"){ "$it|${marks[it] ?: "√"}" }).apply()
-                val values=names.map{marks[it] ?: "√"}
-                AlertDialog.Builder(this).setTitle("تم حفظ الكشف")
-                    .setMessage("الصف: $currentClass\nالفترة: $p\nحاضر: ${values.count{it=="√"}}\nغائب: ${values.count{it=="غ"}}\nبعذر: ${values.count{it=="م"}}")
-                    .setPositiveButton("حسنًا",null).show()
+                prefs.edit().putString(key(cls,month,week),values.entries.joinToString("\n"){it.key+"|"+it.value.joinToString(",")}).apply()
+                val all=values.values.flatten()
+                toast("تم الحفظ — حاضر: ${all.count{it=="✓"}}، غائب: ${all.count{it=="غ"}}، بعذر: ${all.count{it=="م"}}")
             }
-            val clear=Button(this).apply{text="مسح علامات هذا الصف والفترة";isAllCaps=false}
-            studentArea.addView(clear,LinearLayout.LayoutParams(-1,-2))
-            clear.setOnClickListener {
-                val p=period.text.toString().trim()
-                if(p.isEmpty()){toast("اكتب الفترة أولاً");return@setOnClickListener}
-                AlertDialog.Builder(this).setTitle("تأكيد المسح")
-                    .setMessage("سيتم مسح علامات الصف $currentClass والفترة $p فقط، دون حذف الأسماء أو كشوف الصفوف الأخرى.")
-                    .setNegativeButton("إلغاء",null)
-                    .setPositiveButton("مسح العلامات"){_,_->prefs.edit().remove(storageKey()).apply();toast("تم مسح علامات هذه الفترة فقط");render()}.show()
+            val summary=Button(this).apply { text="ملخص الحضور لهذا الأسبوع"; isAllCaps=false }
+            area.addView(summary,LinearLayout.LayoutParams(-1,-2))
+            summary.setOnClickListener {
+                val all=values.values.flatten()
+                AlertDialog.Builder(this).setTitle("ملخص $month — $week")
+                    .setMessage("الصف: $cls\nأيام الحضور: ${all.count{it=="✓"}}\nالغياب: ${all.count{it=="غ"}}\nالغياب بعذر: ${all.count{it=="م"}}\nغير محدد: ${all.count{it.isEmpty()}}")
+                    .setPositiveButton("إغلاق",null).show()
             }
         }
-        classSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
+        val listener=object:AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent:AdapterView<*>?) {}
-            override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long){render()}
+            override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { render() }
         }
-        addButton("تحديث الكشف حسب الصف والفترة") { render() }
+        classSpinner.onItemSelectedListener=listener; monthSpinner.onItemSelectedListener=listener; weekSpinner.onItemSelectedListener=listener
+        render()
         addButton("العودة للرئيسية") { showHome() }
     }
 
@@ -329,19 +318,22 @@ class MainActivity : Activity() {
         val classSpinner = Spinner(this)
         classSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, classes)
         root.addView(classSpinner)
-        root.addView(TextView(this).apply { text = "الفصل أو الفترة الدراسية:"; textSize = 16f; setPadding(0, 12, 0, 2) })
+        root.addView(TextView(this).apply { text = "الفصل الدراسي:"; textSize = 16f; setPadding(0, 12, 0, 2) })
         val termInput = EditText(this).apply { hint = "مثال: الفصل الأول 2026"; textSize = 17f }
         root.addView(termInput, LinearLayout.LayoutParams(-1, -2))
+        root.addView(TextView(this).apply { text = "الشهر المراد إدخال درجاته:"; textSize = 16f; setPadding(0, 10, 0, 2) })
+        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")) }
+        root.addView(monthSpinner)
         addButton("إدارة المواد الدراسية") { manageSubjects(classSpinner.selectedItem?.toString() ?: classes.first()) }
         addButton("إدخال درجات الطلاب") {
             val term = termInput.text.toString().trim()
-            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
-            else enterStudentGrades(classSpinner.selectedItem?.toString() ?: classes.first(), term)
+            if (term.isEmpty()) toast("اكتب اسم الفصل الدراسي أولاً")
+            else enterStudentGrades(classSpinner.selectedItem?.toString() ?: classes.first(), "$term | ${monthSpinner.selectedItem}")
         }
         addButton("عرض كشف النتائج والترتيب") {
             val term = termInput.text.toString().trim()
-            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
-            else showResultsSummary(classSpinner.selectedItem?.toString() ?: classes.first(), term)
+            if (term.isEmpty()) toast("اكتب اسم الفصل الدراسي أولاً")
+            else showResultsSummary(classSpinner.selectedItem?.toString() ?: classes.first(), "$term | ${monthSpinner.selectedItem}")
         }
         addButton("العودة للرئيسية") { showHome() }
     }
