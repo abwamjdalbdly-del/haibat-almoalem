@@ -208,80 +208,86 @@ class MainActivity : Activity() {
     }
 
     private fun showAttendance() {
-        setup("الحضور والغياب")
+        setup("كشف الحضور والغياب")
         val classes = classNames()
         if (classes.isEmpty()) {
-            root.addView(TextView(this).apply { text = "لا توجد صفوف مستوردة. استورد أسماء الطلاب من قاعدة البيانات أولاً."; textSize = 17f })
+            root.addView(TextView(this).apply { text = "لا توجد صفوف مستوردة بعد. استورد أسماء الطلاب من Excel أولاً."; textSize = 17f })
             addButton("العودة للرئيسية") { showHome() }; return
         }
+        val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(controls)
+        controls.addView(TextView(this).apply { text = "الصف الدراسي"; textSize = 15f })
         val classSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, classes) }
-        val months = listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")
-        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, months) }
-        val weekSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, (1..4).map { "الأسبوع: $it" }) }
-        fun label(t: String) { root.addView(TextView(this).apply { text=t; textSize=16f; setTextColor(green); setPadding(0,8,0,3) }) }
-        label("الصف الدراسي"); root.addView(classSpinner)
-        label("الشهر"); root.addView(monthSpinner)
-        label("الأسبوع"); root.addView(weekSpinner)
+        controls.addView(classSpinner)
+        controls.addView(TextView(this).apply { text = "الشهر"; textSize = 15f })
+        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")) }
+        controls.addView(monthSpinner)
+        controls.addView(TextView(this).apply { text = "الأسبوع"; textSize = 15f })
+        val weekSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الأسبوع الأول", "الأسبوع الثاني", "الأسبوع الثالث", "الأسبوع الرابع", "الأسبوع الخامس")) }
+        controls.addView(weekSpinner)
         val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
-        val area = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
-        val scroller = HorizontalScrollView(this).apply { addView(area) }
-        root.addView(scroller, LinearLayout.LayoutParams(-1,0,1f))
-        fun key(cls:String, month:String, week:String) = "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
+        val scroll = ScrollView(this)
+        val area = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        scroll.addView(area); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        var marks = linkedMapOf<String, MutableList<String>>()
+        fun key(): String = "attendance_grid_v1_${Uri.encode(classSpinner.selectedItem?.toString() ?: classes.first())}_${monthSpinner.selectedItemPosition}_${weekSpinner.selectedItemPosition}"
         fun render() {
             area.removeAllViews()
-            val cls=classSpinner.selectedItem?.toString() ?: classes.first()
-            val month=monthSpinner.selectedItem?.toString() ?: months.first()
-            val week=weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names=classStudentNames(cls)
-            val saved=(prefs.getString(key(cls,month,week),"") ?: "").split("\n").filter{it.contains("|")}.associate { val a=it.split("|"); a[0] to a.getOrElse(1){""} }
-            val table=TableLayout(this).apply { isStretchAllColumns=true }
-            val header=TableRow(this)
-            listOf("اسم الطالب") .plus(days).forEach { h -> header.addView(TextView(this).apply { text=h; textSize=13f; gravity=Gravity.CENTER; setTextColor(Color.WHITE); setBackgroundColor(green); setPadding(7,12,7,12) }) }
-            table.addView(header)
-            val values=linkedMapOf<String,MutableList<String>>()
-            names.forEachIndexed { index,name ->
-                val row=TableRow(this)
-                row.addView(TextView(this).apply { text="${index+1}. $name"; textSize=14f; setPadding(8,10,8,10); setTextColor(Color.BLACK) })
-                val old=saved[name]?.split(",") ?: emptyList()
-                val dayValues=MutableList(6){i->old.getOrElse(i){""}}
-                values[name]=dayValues
-                days.indices.forEach { d ->
-                    val sp=Spinner(this)
-                    sp.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("—","✓","غ","م"))
-                    sp.setSelection(when(dayValues[d]){"✓"->1;"غ"->2;"م"->3;else->0})
-                    sp.onItemSelectedListener=object:AdapterView.OnItemSelectedListener {
-                        override fun onNothingSelected(parent:AdapterView<*>?) {}
-                        override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { dayValues[d]=listOf("","✓","غ","م")[position] }
+            val className = classSpinner.selectedItem?.toString() ?: classes.first()
+            val names = classStudentNames(className)
+            area.addView(TextView(this).apply { text = "${className} | ${monthSpinner.selectedItem} | ${weekSpinner.selectedItem} | عدد الطلاب: ${names.size}"; textSize = 16f; setTextColor(green); gravity = Gravity.CENTER; setPadding(4, 12, 4, 12) })
+            marks = linkedMapOf()
+            val saved = prefs.getString(key(), "") ?: ""
+            saved.split("\n").filter { it.contains("|") }.forEach { line ->
+                val parts = line.split("|", limit = 2)
+                if (parts.size == 2) marks[parts[0]] = parts[1].split(",").toMutableList()
+            }
+            names.forEach { if (marks[it] == null) marks[it] = MutableList(days.size) { "" } }
+            val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            header.addView(TextView(this).apply { text = "اسم الطالب"; gravity = Gravity.CENTER; textSize = 13f; setTextColor(Color.WHITE); setBackgroundColor(green) }, LinearLayout.LayoutParams(0, 58, 2.2f))
+            days.forEach { day -> header.addView(TextView(this).apply { text = day; gravity = Gravity.CENTER; textSize = 11f; setTextColor(Color.WHITE); setBackgroundColor(green) }, LinearLayout.LayoutParams(46, 58)) }
+            area.addView(header)
+            names.forEachIndexed { index, name ->
+                val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+                row.addView(TextView(this).apply { text = name; gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT; textSize = 14f; setPadding(6, 4, 6, 4); setBackgroundColor(if (index % 2 == 0) Color.rgb(238, 245, 242) else Color.WHITE) }, LinearLayout.LayoutParams(0, 52, 2.2f))
+                val values = marks[name] ?: MutableList(days.size) { "" }
+                days.forEachIndexed { dayIndex, _ ->
+                    val cell = TextView(this).apply {
+                        gravity = Gravity.CENTER; textSize = 20f; setPadding(2, 2, 2, 2)
+                        fun paint() { text = when(values[dayIndex]) { "ح" -> "✓"; "غ" -> "غ"; "م" -> "م"; else -> "" }; setTextColor(when(values[dayIndex]) { "ح" -> Color.rgb(35,125,65); "غ" -> Color.RED; "م" -> Color.BLUE; else -> Color.DKGRAY }); setBackgroundColor(if (index % 2 == 0) Color.rgb(248,248,248) else Color.WHITE) }
+                        paint()
+                        setOnClickListener {
+                            values[dayIndex] = when(values[dayIndex]) { "" -> "ح"; "ح" -> "غ"; "غ" -> "م"; else -> "" }
+                            paint()
+                        }
                     }
-                    row.addView(sp,TableRow.LayoutParams(100,-2))
+                    row.addView(cell, LinearLayout.LayoutParams(46, 52))
                 }
-                table.addView(row)
-                table.addView(TableRow(this).apply { addView(View(this@MainActivity).apply { setBackgroundColor(Color.LTGRAY) },TableRow.LayoutParams(-1,1)) })
+                area.addView(row)
+                area.addView(View(this).apply { setBackgroundColor(Color.LTGRAY) }, LinearLayout.LayoutParams(-1, 1))
             }
-            area.addView(table)
-            val save=Button(this).apply { text="حفظ سجل الأسبوع"; isAllCaps=false; setTextColor(Color.WHITE); setBackgroundColor(green) }
-            area.addView(save,LinearLayout.LayoutParams(-1,-2))
+            val legend = TextView(this).apply { text = "اضغط على الخانة لتغيير العلامة: ✓ حاضر   غ غائب   م غائب بعذر   (ثم فارغ)"; textSize = 13f; setPadding(4, 10, 4, 10) }
+            area.addView(legend)
+            val summary = names.map { marks[it] ?: emptyList() }.flatten()
+            area.addView(TextView(this).apply { text = "الحضور: ${summary.count { it == "ح" }}   الغياب: ${summary.count { it == "غ" }}   بعذر: ${summary.count { it == "م" }}"; textSize = 15f; setTextColor(green); gravity = Gravity.CENTER; setPadding(4, 8, 4, 8) })
+            val save = Button(this).apply { text = "حفظ كشف الأسبوع"; isAllCaps = false }
+            area.addView(save)
             save.setOnClickListener {
-                prefs.edit().putString(key(cls,month,week),values.entries.joinToString("\n"){it.key+"|"+it.value.joinToString(",")}).apply()
-                val all=values.values.flatten()
-                toast("تم الحفظ — حاضر: ${all.count{it=="✓"}}، غائب: ${all.count{it=="غ"}}، بعذر: ${all.count{it=="م"}}")
+                val data = names.joinToString("\n") { n -> "${n}|${(marks[n] ?: MutableList(days.size) { "" }).joinToString(",")}" }
+                prefs.edit().putString(key(), data).commit(); toast("تم حفظ كشف ${weekSpinner.selectedItem}")
             }
-            val summary=Button(this).apply { text="ملخص الحضور لهذا الأسبوع"; isAllCaps=false }
-            area.addView(summary,LinearLayout.LayoutParams(-1,-2))
-            summary.setOnClickListener {
-                val all=values.values.flatten()
-                AlertDialog.Builder(this).setTitle("ملخص $month — $week")
-                    .setMessage("الصف: $cls\nأيام الحضور: ${all.count{it=="✓"}}\nالغياب: ${all.count{it=="غ"}}\nالغياب بعذر: ${all.count{it=="م"}}\nغير محدد: ${all.count{it.isEmpty()}}")
-                    .setPositiveButton("إغلاق",null).show()
-            }
+            val clear = Button(this).apply { text = "مسح علامات الأسبوع"; isAllCaps = false }
+            area.addView(clear)
+            clear.setOnClickListener { AlertDialog.Builder(this@MainActivity).setMessage("مسح علامات هذا الأسبوع فقط؟").setNegativeButton("إلغاء", null).setPositiveButton("مسح") { _, _ -> prefs.edit().remove(key()).commit(); render() }.show() }
         }
-        val listener=object:AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(parent:AdapterView<*>?) {}
-            override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long) { render() }
+        val listener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { render() }
         }
-        classSpinner.onItemSelectedListener=listener; monthSpinner.onItemSelectedListener=listener; weekSpinner.onItemSelectedListener=listener
-        render()
+        classSpinner.onItemSelectedListener = listener; monthSpinner.onItemSelectedListener = listener; weekSpinner.onItemSelectedListener = listener
+        addButton("تحديث الكشف") { render() }
         addButton("العودة للرئيسية") { showHome() }
+        render()
     }
 
     private data class SubjectInfo(val name: String)
@@ -318,22 +324,19 @@ class MainActivity : Activity() {
         val classSpinner = Spinner(this)
         classSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, classes)
         root.addView(classSpinner)
-        root.addView(TextView(this).apply { text = "الفصل الدراسي:"; textSize = 16f; setPadding(0, 12, 0, 2) })
+        root.addView(TextView(this).apply { text = "الفصل أو الفترة الدراسية:"; textSize = 16f; setPadding(0, 12, 0, 2) })
         val termInput = EditText(this).apply { hint = "مثال: الفصل الأول 2026"; textSize = 17f }
         root.addView(termInput, LinearLayout.LayoutParams(-1, -2))
-        root.addView(TextView(this).apply { text = "الشهر المراد إدخال درجاته:"; textSize = 16f; setPadding(0, 10, 0, 2) })
-        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")) }
-        root.addView(monthSpinner)
         addButton("إدارة المواد الدراسية") { manageSubjects(classSpinner.selectedItem?.toString() ?: classes.first()) }
         addButton("إدخال درجات الطلاب") {
             val term = termInput.text.toString().trim()
-            if (term.isEmpty()) toast("اكتب اسم الفصل الدراسي أولاً")
-            else enterStudentGrades(classSpinner.selectedItem?.toString() ?: classes.first(), "$term | ${monthSpinner.selectedItem}")
+            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
+            else enterStudentGrades(classSpinner.selectedItem?.toString() ?: classes.first(), term)
         }
         addButton("عرض كشف النتائج والترتيب") {
             val term = termInput.text.toString().trim()
-            if (term.isEmpty()) toast("اكتب اسم الفصل الدراسي أولاً")
-            else showResultsSummary(classSpinner.selectedItem?.toString() ?: classes.first(), "$term | ${monthSpinner.selectedItem}")
+            if (term.isEmpty()) toast("اكتب اسم الفصل أو الفترة الدراسية أولاً")
+            else showResultsSummary(classSpinner.selectedItem?.toString() ?: classes.first(), term)
         }
         addButton("العودة للرئيسية") { showHome() }
     }
