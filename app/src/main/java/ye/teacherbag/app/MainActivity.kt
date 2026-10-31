@@ -645,3 +645,4 @@ class MainActivity : Activity() {
         return (firstRow..lastRow).mapNotNull{result[it]}
     }
 }
+
