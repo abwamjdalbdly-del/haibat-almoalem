@@ -641,7 +641,81 @@ class MainActivity : Activity() {
             if (invalid) { toast("تحقق من الدرجات: الواجبات والمواظبة والشفهي من 20، والتحريري من 40"); return@setOnClickListener }
             editor.commit(); toast("تم حفظ درجات ${students.size} طالبًا — $subject — $month")
         }
+        addButton("إدخال اختبار نهاية الفصل (من 30)") {
+            showFinalExamEntry(className, termName, subject, students)
+        }
         addButton("العودة إلى إعدادات المحصلات") { showResults() }
+    }
+
+    private fun finalExamKey(className: String, term: String, student: String, subject: String) =
+        "result_final_exam_v1_${Uri.encode(className)}_${Uri.encode(term)}_${Uri.encode(student)}_${Uri.encode(subject)}"
+
+    private fun showFinalExamEntry(className: String, termName: String, subject: String, students: List<String>) {
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        panel.addView(TextView(this).apply {
+            text = "اختبار نهاية الفصل — الدرجة من 30\nالصف: $className     المادة: $subject\nالفصل: $termName"
+            textSize = 15f; setTextColor(green); setPadding(0, 0, 0, dp(8))
+        })
+        val scroll = ScrollView(this)
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val fields = linkedMapOf<String, EditText>()
+        students.forEachIndexed { index, student ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+                setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
+            }
+            row.addView(TextView(this).apply {
+                text = "${index + 1}. $student"; textSize = 14f; setTextColor(Color.BLACK)
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            val grade = EditText(this).apply {
+                hint = "من 30"; textSize = 15f; gravity = Gravity.CENTER
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                isSingleLine = true
+                setText(prefs.getString(finalExamKey(className, termName, student, subject), "") ?: "")
+            }
+            row.addView(grade, LinearLayout.LayoutParams(dp(88), dp(48)))
+            fields[student] = grade
+            list.addView(row)
+            list.addView(View(this).apply { setBackgroundColor(Color.LTGRAY) }, LinearLayout.LayoutParams(-1, dp(1)))
+        }
+        scroll.addView(list)
+        panel.addView(scroll, LinearLayout.LayoutParams(-1, dp(420)))
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("درجات اختبار نهاية الفصل")
+            .setView(panel)
+            .setNegativeButton("إلغاء", null)
+            .setPositiveButton("حفظ الدرجات", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                var invalid = false
+                fields.values.forEach { field ->
+                    val raw = field.text.toString().trim()
+                    val value = raw.toDoubleOrNull()
+                    if (raw.isNotEmpty() && (value == null || value < 0.0 || value > 30.0)) invalid = true
+                }
+                if (invalid) {
+                    toast("درجة الاختبار يجب أن تكون من 0 إلى 30")
+                    return@setOnClickListener
+                }
+                val editor = prefs.edit()
+                fields.forEach { (student, field) ->
+                    val raw = field.text.toString().trim()
+                    val key = finalExamKey(className, termName, student, subject)
+                    if (raw.isEmpty()) editor.remove(key) else editor.putString(key, raw)
+                }
+                editor.commit()
+                toast("تم حفظ درجات اختبار نهاية الفصل لـ ${students.size} طالبًا")
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
     }
 
     private fun maxesForPart(index: Int): Double = if (index == 3) 40.0 else 20.0
