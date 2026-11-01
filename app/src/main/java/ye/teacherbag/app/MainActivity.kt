@@ -510,10 +510,13 @@ class MainActivity : Activity() {
         val vertical = ScrollView(this)
         val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val table = TableLayout(this).apply { isStretchAllColumns = false; isShrinkAllColumns = false }
-        val widths = listOf(dp(48), dp(164), dp(86), dp(82), dp(82), dp(76), dp(82), dp(76), dp(76))
+        // أعمدة مضغوطة لتقليل الفراغات على شاشة الهاتف.
+        val widths = listOf(dp(36), dp(116), dp(66), dp(58), dp(58), dp(54), dp(58), dp(58), dp(58))
         val headers = listOf("م", "اسم الطالب", "النوع", "الواجبات", "المواظبة", "الشفهي", "التحريري", "المجموع", "المتوسط")
-        val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
-        headers.forEachIndexed { index, title ->
+        // نستخدم LTR مع إضافة الأعمدة بترتيب معكوس حتى يظهر الرقم أقصى اليمين فعلياً.
+        val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
+        headers.indices.reversed().forEach { index ->
+            val title = headers[index]
             val cell = TextView(this).apply {
                 text = title; textSize = 13f; gravity = Gravity.CENTER
                 setTextColor(Color.WHITE); setBackgroundColor(green)
@@ -524,44 +527,52 @@ class MainActivity : Activity() {
         table.addView(header)
 
         students.forEachIndexed { index, student ->
-            val row = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL; minimumHeight = dp(58) }
+            // ترتيب الإضافة من اليسار إلى اليمين معكوس، ليكون (م) أقصى اليمين.
+            val row = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR; minimumHeight = dp(58) }
             fun textCell(value: String, width: Int, bold: Boolean = false): TextView = TextView(this).apply {
-                text = value; textSize = 14f; gravity = Gravity.CENTER
+                text = value; textSize = 13f; gravity = Gravity.CENTER
                 setTextColor(Color.BLACK); if (bold) setTypeface(null, android.graphics.Typeface.BOLD)
                 setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
-                setPadding(dp(3), dp(5), dp(3), dp(5)); minHeight = dp(58)
+                setPadding(dp(1), dp(4), dp(1), dp(4)); minHeight = dp(58)
                 row.addView(this, TableRow.LayoutParams(width, dp(58)))
             }
-            textCell((index + 1).toString(), widths[0])
-            textCell(student, widths[1])
+
+            // خلايا الحساب تضاف أولاً لأنها تقع في أقصى اليسار بصرياً.
+            val averageCell = textCell("—", widths[8], true)
+            val totalCell = textCell("—", widths[7], true)
+            totalsByStudent[student] = totalCell to averageCell
+
+            val parts = listOf("homework", "attendance", "oral", "written")
+            val maxes = listOf(20.0, 20.0, 20.0, 40.0)
+            val fieldsInOrder = arrayOfNulls<EditText>(4)
+            // التحريري ثم الشفهي ثم المواظبة ثم الواجبات: حتى تكون الواجبات يميناً.
+            for (partIndex in 3 downTo 0) {
+                val part = parts[partIndex]
+                val field = EditText(this).apply {
+                    textSize = 13f; gravity = Gravity.CENTER
+                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    isSingleLine = true; setPadding(dp(1), dp(3), dp(1), dp(3))
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
+                    setText(prefs.getString(resultGradeKey(className, period, student, subject, part), "") ?: "")
+                }
+                row.addView(field, TableRow.LayoutParams(widths[partIndex + 3], dp(58)))
+                fieldsInOrder[partIndex] = field
+            }
+            val fields = fieldsInOrder.map { it!! }
+            fieldsByStudent[student] = fields
 
             val gender = Spinner(this).apply {
                 adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("ذكور", "إناث"))
                 val savedGender = prefs.getString(studentGenderKey(className, student), null)
-                val inferred = if (className.contains("بنات") || className.contains("إناث") || className.contains("بنات")) 1 else 0
+                val inferred = if (className.contains("بنات") || className.contains("إناث")) 1 else 0
                 setSelection(if (savedGender == "إناث") 1 else if (savedGender == "ذكور") 0 else inferred)
                 setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
             }
             row.addView(gender, TableRow.LayoutParams(widths[2], dp(58)))
             genderByStudent[student] = gender
 
-            val parts = listOf("homework", "attendance", "oral", "written")
-            val maxes = listOf(20.0, 20.0, 20.0, 40.0)
-            val fields = parts.mapIndexed { partIndex, part ->
-                val field = EditText(this).apply {
-                    textSize = 15f; gravity = Gravity.CENTER
-                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-                    isSingleLine = true; setPadding(dp(2), dp(4), dp(2), dp(4))
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
-                    setText(prefs.getString(resultGradeKey(className, period, student, subject, part), "") ?: "")
-                }
-                row.addView(field, TableRow.LayoutParams(widths[partIndex + 3], dp(58)))
-                field
-            }
-            fieldsByStudent[student] = fields
-            val totalCell = textCell("—", widths[7], true)
-            val averageCell = textCell("—", widths[8], true)
-            totalsByStudent[student] = totalCell to averageCell
+            textCell(student, widths[1])
+            textCell((index + 1).toString(), widths[0])
 
             fun updateTotals() {
                 val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
@@ -583,10 +594,15 @@ class MainActivity : Activity() {
             updateTotals()
             table.addView(row)
             val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
-            table.addView(TableRow(this).apply { addView(separator, TableRow.LayoutParams(widths.sum(), dp(1))) })
+            table.addView(TableRow(this).apply {
+                layoutDirection = View.LAYOUT_DIRECTION_LTR
+                addView(separator, TableRow.LayoutParams(widths.sum(), dp(1)))
+            })
         }
         tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
         horizontal.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
+        // ابدأ العرض من الطرف الأيمن حيث رقم الطالب واسم الطالب.
+        horizontal.post { horizontal.fullScroll(View.FOCUS_RIGHT) }
         vertical.addView(horizontal, ViewGroup.LayoutParams(-2, -2))
         root.addView(vertical, LinearLayout.LayoutParams(-1, 0, 1f))
 
