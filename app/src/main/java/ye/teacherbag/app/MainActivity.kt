@@ -498,7 +498,7 @@ class MainActivity : Activity() {
         if (students.isEmpty()) { toast("لا توجد أسماء طلاب مرتبطة بهذا الصف"); return }
         val period = "$termName | $month"
         val fieldsByStudent = linkedMapOf<String, List<EditText>>()
-        val genderByStudent = linkedMapOf<String, Spinner>()
+        val genderByStudent = linkedMapOf<String, TextView>()
         val totalsByStudent = linkedMapOf<String, Pair<TextView, TextView>>()
 
         setup("كشف المحصلات — $subject")
@@ -561,22 +561,30 @@ class MainActivity : Activity() {
             val fields = fieldsInOrder.map { it!! }
             fieldsByStudent[student] = fields
 
-            val gender = Spinner(this).apply {
-                adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_item, listOf("ذكور", "إناث")).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-                val savedGender = prefs.getString(studentGenderKey(className, student), null)
-                val inferred = if (className.contains("بنات") || className.contains("إناث")) 1 else 0
-                setSelection(if (savedGender == "إناث") 1 else if (savedGender == "ذكور") 0 else inferred)
+            val savedGender = prefs.getString(studentGenderKey(className, student), null)
+            val inferredGender = if (className.contains("بنات") || className.contains("إناث")) "إناث" else "ذكور"
+            val gender = TextView(this).apply {
+                text = savedGender ?: inferredGender
+                textSize = 12f
+                gravity = Gravity.CENTER
+                setTextColor(Color.BLACK)
+                setPadding(dp(1), dp(4), dp(1), dp(4))
                 setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    val choices = arrayOf("ذكور", "إناث")
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("نوع الطالب: $student")
+                        .setItems(choices) { _, which ->
+                            text = choices[which]
+                            prefs.edit().putString(studentGenderKey(className, student), choices[which]).apply()
+                        }
+                        .show()
+                }
             }
             row.addView(gender, LinearLayout.LayoutParams(widths[2], dp(58)))
             genderByStudent[student] = gender
-            gender.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    val selectedGender = if (position == 1) "إناث" else "ذكور"
-                    prefs.edit().putString(studentGenderKey(className, student), selectedGender).apply()
-                }
-            }
 
             textCell(student, widths[1])
             textCell((index + 1).toString(), widths[0])
@@ -628,7 +636,7 @@ class MainActivity : Activity() {
                     val key = resultGradeKey(className, period, student, subject, listOf("homework", "attendance", "oral", "written")[partIndex])
                     if (raw.isEmpty()) editor.remove(key) else if (number != null) editor.putString(key, raw)
                 }
-                editor.putString(studentGenderKey(className, student), if (genderByStudent[student]?.selectedItemPosition == 1) "إناث" else "ذكور")
+                editor.putString(studentGenderKey(className, student), genderByStudent[student]?.text?.toString() ?: "ذكور")
             }
             if (invalid) { toast("تحقق من الدرجات: الواجبات والمواظبة والشفهي من 20، والتحريري من 40"); return@setOnClickListener }
             editor.commit(); toast("تم حفظ درجات ${students.size} طالبًا — $subject — $month")
