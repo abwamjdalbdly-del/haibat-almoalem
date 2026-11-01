@@ -255,7 +255,7 @@ class MainActivity : Activity() {
         }
         val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
-        verticalScroll.addView(horizontalScroll, ScrollView.LayoutParams(-2, -2))
+        verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-2, -2))
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val saveButton = Button(this).apply {
