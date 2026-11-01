@@ -298,7 +298,7 @@ class MainActivity : Activity() {
             val dayWidth = dp(68)
             val headerHeight = dp(54)
             val rowHeight = dp(62)
-            val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
+            val days = listOf("الخميس", "الأربعاء", "الثلاثاء", "الاثنين", "الأحد", "السبت")
 
             // أيام الأسبوع في اليسار واسم الطالب في أقصى اليمين.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
