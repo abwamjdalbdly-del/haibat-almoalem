@@ -300,37 +300,38 @@ class MainActivity : Activity() {
             val rowHeight = dp(62)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
-            val header = TableRow(this)
-            val headers = listOf("اسم الطالب") + days
-            headers.forEachIndexed { index, title ->
-                val width = if (index == 0) nameWidth else dayWidth
+            // أيام الأسبوع في اليسار واسم الطالب في أقصى اليمين.
+            val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
+            days.forEach { title ->
                 val cell = TextView(this).apply {
                     text = title
-                    textSize = if (index == 0) 15f else 13f
+                    textSize = 13f
                     gravity = Gravity.CENTER
                     setTextColor(Color.WHITE)
                     setBackgroundColor(green)
                     setPadding(dp(5), dp(6), dp(5), dp(6))
                     minHeight = headerHeight
                 }
-                header.addView(cell, TableRow.LayoutParams(width, headerHeight))
+                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight))
             }
+            val nameHeader = TextView(this).apply {
+                text = "اسم الطالب"
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                setBackgroundColor(green)
+                setPadding(dp(5), dp(6), dp(5), dp(6))
+                minHeight = headerHeight
+            }
+            header.addView(nameHeader, TableRow.LayoutParams(nameWidth, headerHeight))
             table.addView(header)
 
             names.forEachIndexed { index, name ->
-                val row = TableRow(this).apply { minimumHeight = rowHeight }
-                val nameCell = TextView(this).apply {
-                    text = "${index + 1}. $name"
-                    textSize = 16f
-                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-                    setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
-                    setPadding(dp(10), dp(5), dp(10), dp(5))
-                    maxLines = 2
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    minHeight = rowHeight
+                // ترتيب الصف أفقيًا ثابت: الأيام أولاً ثم اسم الطالب يمينًا.
+                val row = TableRow(this).apply {
+                    layoutDirection = View.LAYOUT_DIRECTION_LTR
+                    minimumHeight = rowHeight
                 }
-                row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
 
                 val old = saved[name]?.split(",") ?: emptyList()
                 val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
@@ -353,6 +354,19 @@ class MainActivity : Activity() {
                     }
                     row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight))
                 }
+
+                val nameCell = TextView(this).apply {
+                    text = "${index + 1}. $name"
+                    textSize = 16f
+                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+                    setTextColor(Color.BLACK)
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
+                    setPadding(dp(10), dp(5), dp(10), dp(5))
+                    maxLines = 2
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    minHeight = rowHeight
+                }
+                row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
                 table.addView(row)
 
                 val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
