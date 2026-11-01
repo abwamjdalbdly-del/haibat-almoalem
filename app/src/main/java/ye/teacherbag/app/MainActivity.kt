@@ -250,9 +250,11 @@ class MainActivity : Activity() {
         // Scroll vertically for long class lists and horizontally for all six days.
         val verticalScroll = ScrollView(this)
         val horizontalScroll = HorizontalScrollView(this).apply {
-            isFillViewport = false
-            isHorizontalScrollBarEnabled = true
-        }
+    isFillViewport = false
+    isHorizontalScrollBarEnabled = true
+    clipToPadding = true
+    setPadding(0, 0, 0, 0)
+}
         val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
         verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-2, -2))
