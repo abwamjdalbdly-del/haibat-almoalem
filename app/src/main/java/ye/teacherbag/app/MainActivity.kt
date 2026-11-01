@@ -420,7 +420,7 @@ class MainActivity : Activity() {
     private data class SubjectInfo(val name: String)
     private data class SubjectMarks(val homework: Double, val attendance: Double, val oral: Double, val written: Double) {
         val total: Double get() = homework + attendance + oral + written
-        val average20: Double get() = total / 5.0
+        val average20: Double get() = (total / 5.0).let { kotlin.math.round(it).toDouble() }
         val complete: Boolean get() = true
     }
     private data class StudentResult(val name: String, val total: Double, val average20: Double, val enteredSubjects: Int, val subjectCount: Int)
@@ -594,7 +594,7 @@ class MainActivity : Activity() {
                 if (values.all { it != null }) {
                     val total = values.filterNotNull().sum()
                     totalCell.text = formatGrade(total)
-                    averageCell.text = formatGrade(total / 5.0)
+                    averageCell.text = formatGrade(kotlin.math.round(total / 5.0))
                 } else {
                     val entered = values.filterNotNull()
                     totalCell.text = if (entered.isEmpty()) "—" else formatGrade(entered.sum())
@@ -773,7 +773,7 @@ class MainActivity : Activity() {
             val marks = subjects.map { getSubjectMarks(className, term, student, it.name) }
             val entered = marks.count { it != null }
             val total = marks.filterNotNull().sumOf { it.total }
-            val average = if (entered == subjects.size) total / subjects.size / 5.0 else 0.0
+            val average = if (entered == subjects.size) kotlin.math.round(total / subjects.size / 5.0) else 0.0
             StudentResult(student, total, average, entered, subjects.size)
         }.sortedWith(compareByDescending<StudentResult> { it.enteredSubjects == it.subjectCount }.thenByDescending { it.total }.thenBy { it.name })
         val completed = rows.filter { it.enteredSubjects == it.subjectCount }
