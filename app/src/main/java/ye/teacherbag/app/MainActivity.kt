@@ -551,7 +551,7 @@ class MainActivity : Activity() {
                 val field = EditText(this).apply {
                     textSize = 15f; gravity = Gravity.CENTER
                     inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-                    singleLine = true; setPadding(dp(2), dp(4), dp(2), dp(4))
+                    isSingleLine = true; setPadding(dp(2), dp(4), dp(2), dp(4))
                     setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
                     setText(prefs.getString(resultGradeKey(className, period, student, subject, part), "") ?: "")
                 }
