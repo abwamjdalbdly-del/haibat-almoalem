@@ -307,7 +307,7 @@ class MainActivity : Activity() {
             // رؤوس الأيام داخل مستطيلات طويلة؛ تدوير الكلمة كاملة مع بقاء اتصال الحروف.
             days.reversed().forEach { title ->
 val currentDayWidth =
-    if (title = "الخميس") dp(50) else dayWidth
+    if (title == "الخميس") dp(50) else dayWidth
                 val cell = FrameLayout(this).apply {
                     val shape = android.graphics.drawable.GradientDrawable().apply {
                         setColor(Color.rgb(242, 246, 255))
