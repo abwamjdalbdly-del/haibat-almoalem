@@ -45,7 +45,7 @@ class MainActivity : Activity() {
         addButton("كشف الحضور والغياب") { showAttendance() }
         addButton("كشوف التحصيل والنتائج") { showResults() }
         addButton("نسخة احتياطية للبيانات") { backupInfo() }
-        root.addView(TextView(this).apply { text="نسخة أولية قيد التطوير"; textSize=13f; gravity=Gravity.CENTER; setTextColor(Color.GRAY); setPadding(8,22,8,8) })
+        root.addView(TextView(this).apply { text="إدارة مدرسية تعمل دون إنترنت"; textSize=13f; gravity=Gravity.CENTER; setTextColor(Color.GRAY); setPadding(8,22,8,8) })
     }
 
     // قاعدة البيانات العامة القديمة محفوظة للتوافق مع بيانات الإصدارات السابقة.
@@ -252,6 +252,7 @@ class MainActivity : Activity() {
         val horizontalScroll = HorizontalScrollView(this).apply {
             isFillViewport = false
             isHorizontalScrollBarEnabled = true
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
         val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
@@ -296,16 +297,16 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(190)
             val dayWidth = dp(68)
-            val headerHeight = dp(54)
+            val headerHeight = dp(92)
             val rowHeight = dp(62)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // أيام الأسبوع في اليسار واسم الطالب في أقصى اليمين.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
-            days.asReversed().forEach { title ->
+            days.forEach { title ->
                 val cell = TextView(this).apply {
-                    text = title
-                    textSize = 13f
+                    text = title.toCharArray().joinToString("\n")
+                    textSize = 12f
                     gravity = Gravity.CENTER
                     setTextColor(Color.WHITE)
                     setBackgroundColor(green)
@@ -336,7 +337,7 @@ class MainActivity : Activity() {
                 val old = saved[name]?.split(",") ?: emptyList()
                 val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
                 currentValues[name] = dayValues
-                days.indices.reversed().forEach { day ->
+                days.indices.forEach { day ->
                     val spinner = Spinner(this).apply {
                         adapter = ArrayAdapter(
                             this@MainActivity,
@@ -382,6 +383,8 @@ class MainActivity : Activity() {
                 })
             } else {
                 tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
+                // إظهار عمود اسم الطالب الموجود في أقصى اليمين فور فتح الجدول.
+                horizontalScroll.post { horizontalScroll.fullScroll(View.FOCUS_RIGHT) }
             }
         }
 
