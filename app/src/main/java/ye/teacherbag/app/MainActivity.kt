@@ -295,10 +295,10 @@ class MainActivity : Activity() {
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
-            val nameWidth = dp(190)
-            val dayWidth = dp(66)
+            val nameWidth = dp(200)
+            val dayWidth = dp(55)
             val headerHeight = dp(100)
-            val rowHeight = dp(62)
+            val rowHeight = dp(60)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب العرض من اليمين إلى اليسار: اسم الطالب، السبت، الأحد... الخميس.
