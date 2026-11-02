@@ -297,24 +297,35 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(190)
             val dayWidth = dp(88)
-            val headerHeight = dp(58)
+            val headerHeight = dp(150)
             val rowHeight = dp(62)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب العرض من اليمين إلى اليسار: اسم الطالب، السبت، الأحد... الخميس.
             // نستخدم LTR داخلياً ونضيف الأيام بالعكس لضمان ثبات ترتيبها على أجهزة RTL.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
+            // رؤوس الأيام داخل مستطيلات طويلة؛ تدوير الكلمة كاملة مع بقاء اتصال الحروف.
             days.reversed().forEach { title ->
-                val cell = TextView(this).apply {
-                    text = title
-                    textSize = 12f
-                    gravity = Gravity.CENTER
-                    setTextColor(Color.WHITE)
-                    setBackgroundColor(green)
-                    setPadding(dp(5), dp(6), dp(5), dp(6))
-                    minHeight = headerHeight
+                val cell = FrameLayout(this).apply {
+                    val shape = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Color.rgb(242, 246, 255))
+                        setStroke(dp(2), Color.DKGRAY)
+                        cornerRadius = dp(18).toFloat()
+                    }
+                    background = shape
                 }
-                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight))
+                val word = TextView(this).apply {
+                    text = title
+                    textSize = 20f
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.BLACK)
+                    includeFontPadding = true
+                    rotation = 90f
+                }
+                cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(18), dp(44), Gravity.CENTER))
+                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
+                    setMargins(dp(2), dp(2), dp(2), dp(2))
+                })
             }
             val nameHeader = TextView(this).apply {
                 text = "اسم الطالب"
