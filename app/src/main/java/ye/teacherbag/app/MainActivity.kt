@@ -579,7 +579,7 @@ val currentDayWidth =
             fieldsByStudent[student] = fields
 
             val savedGender = prefs.getString(studentGenderKey(className, student), null)
-            val inferredGender = if (className.contains("بنات") || className.contains("إناث")) "إناث" else "ذكور"
+            val inferredGender = if (className.contains("بنات") || className.contains("إناث")) "أنثى" else "ذكر"
             val gender = TextView(this).apply {
                 text = savedGender ?: inferredGender
                 textSize = 12f
