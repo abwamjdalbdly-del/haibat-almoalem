@@ -296,16 +296,17 @@ class MainActivity : Activity() {
                 setPadding(0, dp(3), 0, dp(8))
             }
             val nameWidth = dp(190)
-            val dayWidth = dp(68)
-            val headerHeight = dp(92)
+            val dayWidth = dp(88)
+            val headerHeight = dp(58)
             val rowHeight = dp(62)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
-            // أيام الأسبوع في اليسار واسم الطالب في أقصى اليمين.
+            // ترتيب العرض من اليمين إلى اليسار: اسم الطالب، السبت، الأحد... الخميس.
+            // نستخدم LTR داخلياً ونضيف الأيام بالعكس لضمان ثبات ترتيبها على أجهزة RTL.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
-            days.forEach { title ->
+            days.reversed().forEach { title ->
                 val cell = TextView(this).apply {
-                    text = title.toCharArray().joinToString("\n")
+                    text = title
                     textSize = 12f
                     gravity = Gravity.CENTER
                     setTextColor(Color.WHITE)
@@ -328,7 +329,7 @@ class MainActivity : Activity() {
             table.addView(header)
 
             names.forEachIndexed { index, name ->
-                // ترتيب الصف أفقيًا ثابت: الأيام أولاً ثم اسم الطالب يمينًا.
+                // ترتيب الخلايا بصرياً من اليسار: الخميس ... السبت ثم اسم الطالب أقصى اليمين.
                 val row = TableRow(this).apply {
                     layoutDirection = View.LAYOUT_DIRECTION_LTR
                     minimumHeight = rowHeight
@@ -337,7 +338,7 @@ class MainActivity : Activity() {
                 val old = saved[name]?.split(",") ?: emptyList()
                 val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
                 currentValues[name] = dayValues
-                days.indices.forEach { day ->
+                days.indices.reversed().forEach { day ->
                     val spinner = Spinner(this).apply {
                         adapter = ArrayAdapter(
                             this@MainActivity,
@@ -383,7 +384,7 @@ class MainActivity : Activity() {
                 })
             } else {
                 tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
-                // إظهار عمود اسم الطالب الموجود في أقصى اليمين فور فتح الجدول.
+                // إظهار الطرف الأيمن من الجدول، حيث عمود أسماء الطلاب.
                 horizontalScroll.post { horizontalScroll.fullScroll(View.FOCUS_RIGHT) }
             }
         }
