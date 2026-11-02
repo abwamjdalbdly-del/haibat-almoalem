@@ -295,7 +295,7 @@ class MainActivity : Activity() {
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
-            val nameWidth = dp(210)
+            val nameWidth = dp(260)
             val dayWidth = dp(50)
             val headerHeight = dp(50)
             val rowHeight = dp(80)
