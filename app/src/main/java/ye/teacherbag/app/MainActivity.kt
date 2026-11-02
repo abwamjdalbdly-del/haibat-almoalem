@@ -296,7 +296,7 @@ class MainActivity : Activity() {
                 setPadding(0, dp(3), 0, dp(8))
             }
             val nameWidth = dp(210)
-            val dayWidth = dp(50)
+            val dayWidth = dp(80)
             val headerHeight = dp(50)
             val rowHeight = dp(50)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
