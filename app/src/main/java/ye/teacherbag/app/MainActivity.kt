@@ -295,8 +295,8 @@ class MainActivity : Activity() {
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
-            val nameWidth = dp(200)
-            val dayWidth = dp(55)
+            val nameWidth = dp(210)
+            val dayWidth = dp(50)
             val headerHeight = dp(100)
             val rowHeight = dp(60)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
@@ -306,6 +306,8 @@ class MainActivity : Activity() {
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
             // رؤوس الأيام داخل مستطيلات طويلة؛ تدوير الكلمة كاملة مع بقاء اتصال الحروف.
             days.reversed().forEach { title ->
+val currentDayWidth =
+    if (title == "الخميس") dp(50) else dayWidth
                 val cell = FrameLayout(this).apply {
                     val shape = android.graphics.drawable.GradientDrawable().apply {
                         setColor(Color.rgb(242, 246, 255))
@@ -323,7 +325,7 @@ class MainActivity : Activity() {
                     rotation = 90f
                 }
                 cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
-                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
+               header.addView(cell, TableRow.LayoutParams(currentDayWidth, headerHeight).apply { 
                     setMargins(dp(2), dp(2), dp(2), dp(2))
                 })
             }
