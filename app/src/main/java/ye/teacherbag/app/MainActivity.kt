@@ -296,8 +296,8 @@ class MainActivity : Activity() {
                 setPadding(0, dp(3), 0, dp(8))
             }
             val nameWidth = dp(190)
-            val dayWidth = dp(88)
-            val headerHeight = dp(150)
+            val dayWidth = dp(66)
+            val headerHeight = dp(100)
             val rowHeight = dp(62)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
@@ -316,13 +316,13 @@ class MainActivity : Activity() {
                 }
                 val word = TextView(this).apply {
                     text = title
-                    textSize = 20f
+                    textSize = 16f
                     gravity = Gravity.CENTER
                     setTextColor(Color.BLACK)
                     includeFontPadding = true
                     rotation = 90f
                 }
-                cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(18), dp(44), Gravity.CENTER))
+                cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
                 header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
                     setMargins(dp(2), dp(2), dp(2), dp(2))
                 })
