@@ -577,9 +577,9 @@ class MainActivity : Activity() {
 
         val outerScroll = HorizontalScrollView(this).apply { isFillViewport = true }
         val table = TableLayout(this).apply { isStretchAllColumns = false; isShrinkAllColumns = false }
-        outerScroll.addView(table, HorizontalScrollView.LayoutParams(-2, -2))
+        outerScroll.addView(table, ViewGroup.LayoutParams(-2, -2))
         val vertical = ScrollView(this).apply { isFillViewport = true }
-        vertical.addView(outerScroll, ScrollView.LayoutParams(-1, -2))
+        vertical.addView(outerScroll, ViewGroup.LayoutParams(-1, -2))
         root.addView(vertical, LinearLayout.LayoutParams(-1, 0, 1f))
 
         fun cellText(value: String, header: Boolean = false): TextView = TextView(this).apply {
