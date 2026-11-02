@@ -297,7 +297,7 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(260)
             val dayWidth = dp(50)
-            val thursdayWidth = dp(35)
+            val thursdayWidth = dp(25)
             val headerHeight = dp(85)
             val rowHeight = dp(100)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
@@ -308,6 +308,8 @@ class MainActivity : Activity() {
             days.reversed().forEach { title ->
                 val currentDayWidth = if (title == "الخميس") thursdayWidth else dayWidth
                 val cell = FrameLayout(this).apply {
+                    minimumWidth = 0
+                    minimumHeight = 0
                     val shape = android.graphics.drawable.GradientDrawable().apply {
                         setColor(Color.rgb(242, 246, 255))
                         setStroke(dp(2), Color.DKGRAY)
@@ -325,6 +327,7 @@ class MainActivity : Activity() {
                 }
                 cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
                 header.addView(cell, TableRow.LayoutParams(currentDayWidth, headerHeight).apply {
+                    width = currentDayWidth
                     setMargins(dp(2), dp(2), dp(2), dp(2))
                 })
             }
@@ -351,6 +354,9 @@ class MainActivity : Activity() {
 
                 days.indices.reversed().forEach { day ->
                     val spinner = Spinner(this).apply {
+                        minimumWidth = 0
+                        minimumHeight = 0
+                        setBackgroundColor(Color.TRANSPARENT)
                         adapter = ArrayAdapter(
                             this@MainActivity,
                             android.R.layout.simple_spinner_dropdown_item,
@@ -366,7 +372,9 @@ class MainActivity : Activity() {
                         }
                     }
                     val currentDayWidth = if (days[day] == "الخميس") thursdayWidth else dayWidth
-                    row.addView(spinner, TableRow.LayoutParams(currentDayWidth, rowHeight))
+                    row.addView(spinner, TableRow.LayoutParams(currentDayWidth, rowHeight).apply {
+                        width = currentDayWidth
+                        })
                 }
 
                 val nameCell = TextView(this).apply {
