@@ -297,8 +297,8 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(260)
             val dayWidth = dp(50)
-            val headerHeight = dp(50)
-            val rowHeight = dp(100)
+            val headerHeight = dp(85)
+            val rowHeight = dp(60)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب العرض من اليمين إلى اليسار: اسم الطالب، السبت، الأحد... الخميس.
