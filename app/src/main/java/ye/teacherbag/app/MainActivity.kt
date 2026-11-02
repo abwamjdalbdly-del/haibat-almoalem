@@ -556,14 +556,113 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
+    // شاشة إدخال المحصلات: جدول واحد لجميع طلاب الصف لمادة وشهر محددين.
     private fun enterStudentGrades(className: String, term: String) {
         val students = classStudentNames(className)
         val subjects = subjectsFor(className)
         if (students.isEmpty()) { toast("لا توجد أسماء طلاب مرتبطة بهذا الصف"); return }
         if (subjects.isEmpty()) { toast("أضف المواد الدراسية أولاً"); manageSubjects(className); return }
-        AlertDialog.Builder(this).setTitle("اختر الطالب - $className")
-            .setItems(students.toTypedArray()) { _, which -> showStudentGradeEditor(className, term, students[which], subjects) }
-            .setNegativeButton("إلغاء", null).show()
+        AlertDialog.Builder(this).setTitle("اختر المادة الدراسية")
+            .setItems(subjects.map { it.name }.toTypedArray()) { _, which ->
+                showMonthlySubjectEntry(className, term, subjects[which], students)
+            }.setNegativeButton("إلغاء", null).show()
+    }
+
+    private fun showMonthlySubjectEntry(className: String, term: String, subject: SubjectInfo, students: List<String>) {
+        setup("إدخال درجات الطلاب")
+        root.addView(TextView(this).apply {
+            text = "الصف: $className\nالمادة: ${subject.name}\nالفترة: $term\nأدخل درجات جميع الطلاب في الجدول ثم اضغط حفظ الدرجات"
+            textSize = 16f; setTextColor(green); setPadding(0, 0, 0, dp(10))
+        })
+
+        val outerScroll = HorizontalScrollView(this).apply { isFillViewport = true }
+        val table = TableLayout(this).apply { isStretchAllColumns = false; isShrinkAllColumns = false }
+        outerScroll.addView(table, HorizontalScrollView.LayoutParams(-2, -2))
+        val vertical = ScrollView(this).apply { isFillViewport = true }
+        vertical.addView(outerScroll, ScrollView.LayoutParams(-1, -2))
+        root.addView(vertical, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        fun cellText(value: String, header: Boolean = false): TextView = TextView(this).apply {
+            text = value; textSize = if (header) 14f else 13f
+            gravity = Gravity.CENTER; setTextColor(if (header) Color.WHITE else Color.DKGRAY)
+            setPadding(dp(5), dp(10), dp(5), dp(10))
+            if (header) setBackgroundColor(green) else setBackgroundColor(Color.WHITE)
+        }
+        fun addCell(row: TableRow, view: View, width: Int) {
+            row.addView(view, TableRow.LayoutParams(dp(width), dp(58)))
+        }
+        val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        listOf("م", "اسم الطالب", "النوع", "الواجبات\n20", "المواظبة\n20", "الشفهي\n20", "التحريري\n40", "المجموع\n100", "المتوسط\n20")
+            .forEachIndexed { index, label -> addCell(header, cellText(label, true), if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76) }
+        table.addView(header)
+
+        data class GradeRow(val student: String, val gender: Spinner, val fields: List<EditText>, val total: TextView, val average: TextView)
+        val gradeRows = mutableListOf<GradeRow>()
+        students.forEachIndexed { index, student ->
+            val row = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            addCell(row, cellText((index + 1).toString()), 42)
+            addCell(row, cellText(student), 190)
+            val gender = Spinner(this).apply {
+                adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("ذكور", "إناث"))
+                val gKey = "result_gender_v1_${Uri.encode(className)}_${Uri.encode(student)}"
+                val saved = prefs.getString(gKey, "ذكور") ?: "ذكور"
+                setSelection(if (saved == "إناث") 1 else 0)
+            }
+            addCell(row, gender, 82)
+            val parts = listOf("homework", "attendance", "oral", "written")
+            val maxima = listOf(20.0, 20.0, 20.0, 40.0)
+            val fields = parts.mapIndexed { partIndex, part ->
+                val edit = EditText(this).apply {
+                    textSize = 14f; gravity = Gravity.CENTER
+                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    hint = "—"; setPadding(dp(2), dp(4), dp(2), dp(4)); setBackgroundColor(Color.WHITE)
+                    setText(prefs.getString(resultGradeKey(className, term, student, subject.name, part), "") ?: "")
+                }
+                addCell(row, edit, 82)
+                edit
+            }
+            val totalView = cellText("—")
+            val averageView = cellText("—")
+            addCell(row, totalView, 76); addCell(row, averageView, 76)
+            fun updateTotals() {
+                val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
+                if (values.all { it != null }) {
+                    val total = values.filterNotNull().sum()
+                    totalView.text = formatGrade(total)
+                    averageView.text = formatGrade(total / 5.0)
+                } else { totalView.text = "—"; averageView.text = "—" }
+            }
+            fields.forEach { it.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { updateTotals() }
+                override fun afterTextChanged(s: android.text.Editable?) {}
+            }) }
+            updateTotals()
+            gradeRows.add(GradeRow(student, gender, fields, totalView, averageView))
+            table.addView(row)
+        }
+
+        addButton("حفظ درجات جميع الطلاب") {
+            val invalid = gradeRows.firstOrNull { r ->
+                r.fields.withIndex().any { (i, f) ->
+                    val raw = f.text.toString().trim(); val value = raw.toDoubleOrNull()
+                    raw.isNotEmpty() && (value == null || value < 0 || value > listOf(20.0, 20.0, 20.0, 40.0)[i])
+                }
+            }
+            if (invalid != null) { toast("تحقق من درجات الطالب: ${invalid.student} — الحدود 20، 20، 20، 40"); return@addButton }
+            val editor = prefs.edit()
+            gradeRows.forEach { r ->
+                val genderKey = "result_gender_v1_${Uri.encode(className)}_${Uri.encode(r.student)}"
+                editor.putString(genderKey, r.gender.selectedItem?.toString() ?: "ذكور")
+                listOf("homework", "attendance", "oral", "written").forEachIndexed { i, part ->
+                    val key = resultGradeKey(className, term, r.student, subject.name, part)
+                    val raw = r.fields[i].text.toString().trim()
+                    if (raw.isEmpty()) editor.remove(key) else editor.putString(key, raw)
+                }
+            }
+            editor.commit(); toast("تم حفظ درجات ${gradeRows.size} طالبًا في ${subject.name}")
+        }
+        addButton("العودة إلى المحصلات") { showResults() }
     }
 
     private fun showStudentGradeEditor(className: String, term: String, student: String, subjects: List<SubjectInfo>) {
