@@ -302,7 +302,7 @@ class MainActivity : Activity() {
 
             // أيام الأسبوع في اليسار واسم الطالب في أقصى اليمين.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
-            days.forEach { title ->
+            days.asReversed().forEach { title ->
                 val cell = TextView(this).apply {
                     text = title
                     textSize = 13f
@@ -336,7 +336,7 @@ class MainActivity : Activity() {
                 val old = saved[name]?.split(",") ?: emptyList()
                 val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
                 currentValues[name] = dayValues
-                days.indices.forEach { day ->
+                days.indices.reversed().forEach { day ->
                     val spinner = Spinner(this).apply {
                         adapter = ArrayAdapter(
                             this@MainActivity,
