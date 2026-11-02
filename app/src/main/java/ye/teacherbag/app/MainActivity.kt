@@ -297,8 +297,8 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(210)
             val dayWidth = dp(50)
-            val headerHeight = dp(100)
-            val rowHeight = dp(60)
+            val headerHeight = dp(50)
+            val rowHeight = dp(50)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب العرض من اليمين إلى اليسار: اسم الطالب، السبت، الأحد... الخميس.
@@ -307,7 +307,7 @@ class MainActivity : Activity() {
             // رؤوس الأيام داخل مستطيلات طويلة؛ تدوير الكلمة كاملة مع بقاء اتصال الحروف.
             days.reversed().forEach { title ->
 val currentDayWidth =
-    if (title == "الخميس") dp(50) else dayWidth
+    if (title = "الخميس") dp(50) else dayWidth
                 val cell = FrameLayout(this).apply {
                     val shape = android.graphics.drawable.GradientDrawable().apply {
                         setColor(Color.rgb(242, 246, 255))
@@ -579,7 +579,7 @@ val currentDayWidth =
             fieldsByStudent[student] = fields
 
             val savedGender = prefs.getString(studentGenderKey(className, student), null)
-            val inferredGender = if (className.contains("بنات") || className.contains("إناث")) "أنثى" else "ذكر"
+            val inferredGender = if (className.contains("بنات") || className.contains("أنثى")) "أنثى" else "ذكر"
             val gender = TextView(this).apply {
                 text = savedGender ?: inferredGender
                 textSize = 12f
