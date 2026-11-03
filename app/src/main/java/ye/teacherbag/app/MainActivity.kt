@@ -307,7 +307,7 @@ class MainActivity : Activity() {
             // نستخدم LTR داخلياً ونضيف الأيام بالعكس لضبط مواضع الأعمدة.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
             days.reversed().forEach { title ->
-                val currentDayWidth = if (title == "الخميس") thursdayWidth else dayWidth
+                val currentDayWidth = dayWidth
                 val cell = FrameLayout(this).apply {
                     minimumWidth = 0
                     minimumHeight = 0
