@@ -298,7 +298,7 @@ class MainActivity : Activity() {
             }
             val nameWidth = dp(260)
             val dayWidth = dp(50)
-            val thursdayWidth = dp(25)
+            
             val headerHeight = dp(85)
             val rowHeight = dp(100)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
@@ -372,10 +372,9 @@ class MainActivity : Activity() {
                             dayValues[day] = listOf("", "✓", "غ", "م")[position]
                         }
                     }
-                    val currentDayWidth = if (days[day] == "الخميس") thursdayWidth else dayWidth
-                    row.addView(spinner, TableRow.LayoutParams(currentDayWidth, rowHeight).apply {
-                        width = currentDayWidth
-                        })
+                    row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight).apply {
+    width = dayWidth
+})
                 }
 
                 val nameCell = TextView(this).apply {
@@ -394,7 +393,7 @@ class MainActivity : Activity() {
 
                 val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
                 table.addView(TableRow(this).apply {
-                    addView(separator, TableRow.LayoutParams(nameWidth + dayWidth * 5 + thursdayWidth, dp(1)))
+                    addView(separator, TableRow.LayoutParams( nameWidth + dayWidth * 6+ thursdayWidth, dp(1)))
                 })
             }
             if (names.isEmpty()) {
