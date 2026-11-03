@@ -18,7 +18,7 @@ import java.util.zip.ZipInputStream
 import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
-    private val blue = Color.rgb(23, 107, 85)
+    private val green = Color.rgb(23, 107, 85)
     private val prefs by lazy { getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE) }
     private lateinit var root: LinearLayout
     private val pickExcelRequest = 4101
