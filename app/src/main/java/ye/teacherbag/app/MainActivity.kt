@@ -575,8 +575,15 @@ class MainActivity : Activity() {
             textSize = 16f; setTextColor(green); setPadding(0, 0, 0, dp(10))
         })
 
-        val outerScroll = HorizontalScrollView(this).apply { isFillViewport = true }
-        val table = TableLayout(this).apply { isStretchAllColumns = false; isShrinkAllColumns = false }
+        val outerScroll = HorizontalScrollView(this).apply {
+            isFillViewport = true
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        }
+        val table = TableLayout(this).apply {
+            isStretchAllColumns = false
+            isShrinkAllColumns = false
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        }
         outerScroll.addView(table, ViewGroup.LayoutParams(-2, -2))
         val vertical = ScrollView(this).apply { isFillViewport = true }
         vertical.addView(outerScroll, ViewGroup.LayoutParams(-1, -2))
@@ -588,10 +595,16 @@ class MainActivity : Activity() {
             setPadding(dp(5), dp(10), dp(5), dp(10))
             if (header) setBackgroundColor(green) else setBackgroundColor(Color.WHITE)
         }
+        // نعكس ترتيب الأعمدة داخل الصف حتى يظهر رقم الطالب ثم اسمه عند أقصى اليمين،
+        // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         fun addCell(row: TableRow, view: View, width: Int) {
+            view.scaleX = -1f
             row.addView(view, TableRow.LayoutParams(dp(width), dp(58)))
         }
-        val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        val header = TableRow(this).apply {
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            scaleX = -1f
+        }
         listOf("م", "اسم الطالب", "النوع", "الواجبات\n20", "المواظبة\n20", "الشفهي\n20", "التحريري\n40", "المجموع\n100", "المتوسط\n20")
             .forEachIndexed { index, label -> addCell(header, cellText(label, true), if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76) }
         table.addView(header)
@@ -599,7 +612,10 @@ class MainActivity : Activity() {
         data class GradeRow(val student: String, val gender: Spinner, val fields: List<EditText>, val total: TextView, val average: TextView)
         val gradeRows = mutableListOf<GradeRow>()
         students.forEachIndexed { index, student ->
-            val row = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            val row = TableRow(this).apply {
+                layoutDirection = View.LAYOUT_DIRECTION_LTR
+                scaleX = -1f
+            }
             addCell(row, cellText((index + 1).toString()), 42)
             addCell(row, cellText(student), 190)
             val gender = Spinner(this).apply {
