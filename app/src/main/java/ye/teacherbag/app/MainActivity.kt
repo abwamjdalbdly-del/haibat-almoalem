@@ -618,7 +618,7 @@ class MainActivity : Activity() {
         listOf("م", "اسم الطالب", "النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
             .forEachIndexed { index, label ->
                 val headCell = cellText(label, true)
-                if (index <= 3) headCell.rotation = 270f // من أعلى إلى أسفل
+                if (index=>= 2) headCell.rotation = 270f // من أعلى إلى أسفل
                 addCell(header, headCell, if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76)
             }
         table.addView(header)
