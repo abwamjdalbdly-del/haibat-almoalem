@@ -393,7 +393,7 @@ class MainActivity : Activity() {
 
                 val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
                 table.addView(TableRow(this).apply {
-                    addView(separator, TableRow.LayoutParams( nameWidth + dayWidth * 6+ thursdayWidth, dp(1)))
+                    addView(separator, TableRow.LayoutParams(nameWidth + dayWidth * 6, dp(1)))
                 })
             }
             if (names.isEmpty()) {
