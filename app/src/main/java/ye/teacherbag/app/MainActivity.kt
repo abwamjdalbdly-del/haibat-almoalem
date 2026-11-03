@@ -593,20 +593,33 @@ class MainActivity : Activity() {
             text = value; textSize = if (header) 14f else 13f
             gravity = Gravity.CENTER; setTextColor(if (header) Color.WHITE else Color.DKGRAY)
             setPadding(dp(5), dp(10), dp(5), dp(10))
-            if (header) setBackgroundColor(green) else setBackgroundColor(Color.WHITE)
+            if (header) {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(green); setStroke(dp(1), Color.WHITE); cornerRadius = dp(5).toFloat()
+                }
+            } else {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Color.WHITE); setStroke(dp(1), Color.LTGRAY); cornerRadius = dp(3).toFloat()
+                }
+            }
         }
         // نعكس ترتيب الأعمدة داخل الصف حتى يظهر رقم الطالب ثم اسمه عند أقصى اليمين،
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         fun addCell(row: TableRow, view: View, width: Int) {
             view.scaleX = -1f
-            row.addView(view, TableRow.LayoutParams(dp(width), dp(58)))
+            val height = if (row === header) dp(112) else dp(58)
+            row.addView(view, TableRow.LayoutParams(dp(width), height))
         }
         val header = TableRow(this).apply {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
             scaleX = -1f
         }
-        listOf("م", "اسم الطالب", "النوع", "الواجبات\n20", "المواظبة\n20", "الشفهي\n20", "التحريري\n40", "المجموع\n100", "المتوسط\n20")
-            .forEachIndexed { index, label -> addCell(header, cellText(label, true), if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76) }
+        listOf("م", "اسم الطالب", "النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
+            .forEachIndexed { index, label ->
+                val headCell = cellText(label, true)
+                if (index >= 3) headCell.rotation = 270f // من أعلى إلى أسفل
+                addCell(header, headCell, if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76)
+            }
         table.addView(header)
 
         data class GradeRow(val student: String, val gender: Spinner, val fields: List<EditText>, val total: TextView, val average: TextView)
@@ -645,7 +658,7 @@ class MainActivity : Activity() {
                 if (values.all { it != null }) {
                     val total = values.filterNotNull().sum()
                     totalView.text = formatGrade(total)
-                    averageView.text = formatGrade(total / 5.0)
+                    averageView.text = (total / 5.0).roundToInt().toString()
                 } else { totalView.text = "—"; averageView.text = "—" }
             }
             fields.forEach { it.addTextChangedListener(object : android.text.TextWatcher {
@@ -737,7 +750,7 @@ class MainActivity : Activity() {
             val marks = subjects.map { getSubjectMarks(className, term, student, it.name) }
             val entered = marks.count { it != null }
             val total = marks.filterNotNull().sumOf { it.total }
-            val average = if (entered == subjects.size) total / subjects.size / 5.0 else 0.0
+            val average = if (entered == subjects.size) (total / subjects.size / 5.0).roundToInt().toDouble() else 0.0
             StudentResult(student, total, average, entered, subjects.size)
         }.sortedWith(compareByDescending<StudentResult> { it.enteredSubjects == it.subjectCount }.thenByDescending { it.total }.thenBy { it.name })
         val completed = rows.filter { it.enteredSubjects == it.subjectCount }
