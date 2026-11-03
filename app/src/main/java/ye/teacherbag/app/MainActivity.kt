@@ -1,4 +1,5 @@
 package ye.teacherbag.app
+
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
@@ -14,6 +15,7 @@ import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.util.zip.ZipInputStream
+import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
     private val green = Color.rgb(23, 107, 85)
@@ -604,14 +606,14 @@ class MainActivity : Activity() {
         }
         // نعكس ترتيب الأعمدة داخل الصف حتى يظهر رقم الطالب ثم اسمه عند أقصى اليمين،
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
+        val header = TableRow(this).apply {
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            scaleX = -1f
+        }
         fun addCell(row: TableRow, view: View, width: Int) {
             view.scaleX = -1f
             val height = if (row === header) dp(112) else dp(58)
             row.addView(view, TableRow.LayoutParams(dp(width), height))
-        }
-        val header = TableRow(this).apply {
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-            scaleX = -1f
         }
         listOf("م", "اسم الطالب", "النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
             .forEachIndexed { index, label ->
