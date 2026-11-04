@@ -607,7 +607,7 @@ class MainActivity : Activity() {
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         
         val headerHeight = dp(120)
-        val verticalWidth = dp(82)
+        val verticalWidth = dp(62)
 
         val header = TableRow(this).apply {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -618,9 +618,8 @@ class MainActivity : Activity() {
             val frame = FrameLayout(this).apply {
     scaleX = -1f
     background = android.graphics.drawable.GradientDrawable().apply {
-        setColor(green)
-        setStroke(dp(1), Color.WHITE)
-        cornerRadius = dp(5).toFloat()
+        setColor(BLUE)
+        setStroke(dp(1), Color.rgb(230,120,30)      cornerRadius = dp(5).toFloat()
     }
 }
 
@@ -629,7 +628,7 @@ class MainActivity : Activity() {
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTextColor(Color.WHITE)
-                rotation = 90f
+                rotation = 270f
             }
 
             frame.addView(
@@ -668,7 +667,7 @@ class MainActivity : Activity() {
             "المجموع 100",
             "المتوسط 20"
         ).forEach {
-            addVerticalHeader(header, it, 82)
+            addVerticalHeader(header, it, 62)
         }
 
         table.addView(header)
@@ -697,7 +696,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
                 val saved = prefs.getString(gKey, "ذكر") ?: "ذكر"
                 setSelection(if (saved == "أنثى") 1 else 0)
             }
-            addCell(row, gender, 82)
+            addCell(row, gender, 62)
             val parts = listOf("homework", "attendance", "oral", "written")
             val maxima = listOf(20.0, 20.0, 20.0, 40.0)
             val fields = parts.mapIndexed { partIndex, part ->
@@ -707,12 +706,12 @@ fun addCell(row: TableRow, view: View, width: Int) {
                     hint = "—"; setPadding(dp(2), dp(4), dp(2), dp(4)); setBackgroundColor(Color.WHITE)
                     setText(prefs.getString(resultGradeKey(className, term, student, subject.name, part), "") ?: "")
                 }
-                addCell(row, edit, 82)
+                addCell(row, edit, 62)
                 edit
             }
             val totalView = cellText("—")
             val averageView = cellText("—")
-            addCell(row, totalView, 82); addCell(row, averageView, 82)
+            addCell(row, totalView, 62); addCell(row, averageView, 62)
             fun updateTotals() {
                 val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
                 if (values.all { it != null }) {
