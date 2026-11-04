@@ -606,7 +606,7 @@ class MainActivity : Activity() {
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         
         val headerHeight = dp(120)
-        val verticalWidth = dp(62)
+        val verticalWidth = dp(52)
 
         val header = TableRow(this).apply {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -617,7 +617,7 @@ class MainActivity : Activity() {
     val frame = FrameLayout(this).apply {
         scaleX = -1f
         background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.rgb(23, 107, 85))
+            setColor(Color.blue(23, 107, 85))
             setStroke(dp(1), Color.WHITE)
             cornerRadius = dp(5).toFloat()
         }
@@ -628,7 +628,7 @@ class MainActivity : Activity() {
         textSize = 13f
         gravity = Gravity.CENTER
         setTextColor(Color.WHITE)
-        rotation = 90f
+        rotation =270f
         includeFontPadding = false
     }
 
@@ -656,7 +656,7 @@ fun addNormalHeader(row: TableRow, label: String, width: Int) {
         setPadding(dp(4), dp(5), dp(4), dp(5))
 
         background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.rgb(23, 107, 85))
+            setColor(Color.blue(23, 107, 85))
             setStroke(dp(1), Color.WHITE)
             cornerRadius = dp(5).toFloat()
         }
@@ -708,7 +708,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
                 val saved = prefs.getString(gKey, "ذكر") ?: "ذكر"
                 setSelection(if (saved == "أنثى") 1 else 0)
             }
-            addCell(row, gender, 62)
+            addCell(row, gender, 52)
             val parts = listOf("homework", "attendance", "oral", "written")
             val maxima = listOf(20.0, 20.0, 20.0, 40.0)
             val fields = parts.mapIndexed { partIndex, part ->
@@ -718,12 +718,12 @@ fun addCell(row: TableRow, view: View, width: Int) {
                     hint = "—"; setPadding(dp(2), dp(4), dp(2), dp(4)); setBackgroundColor(Color.WHITE)
                     setText(prefs.getString(resultGradeKey(className, term, student, subject.name, part), "") ?: "")
                 }
-                addCell(row, edit, 62)
+                addCell(row, edit, 52)
                 edit
             }
             val totalView = cellText("—")
             val averageView = cellText("—")
-            addCell(row, totalView, 62); addCell(row, averageView, 62)
+            addCell(row, totalView, 52); addCell(row, averageView, 52)
             fun updateTotals() {
                 val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
                 if (values.all { it != null }) {
