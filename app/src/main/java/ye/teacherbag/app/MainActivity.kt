@@ -617,7 +617,7 @@ class MainActivity : Activity() {
     val frame = FrameLayout(this).apply {
         scaleX = -1f
         background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.blue(23, 107, 85))
+            setColor(Color.rgb(23, 107, 85))
             setStroke(dp(1), Color.WHITE)
             cornerRadius = dp(5).toFloat()
         }
@@ -656,7 +656,7 @@ fun addNormalHeader(row: TableRow, label: String, width: Int) {
         setPadding(dp(4), dp(5), dp(4), dp(5))
 
         background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.blue(23, 107, 85))
+            setColor(Color.rgb(23, 107, 85))
             setStroke(dp(1), Color.WHITE)
             cornerRadius = dp(5).toFloat()
         }
