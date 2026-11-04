@@ -605,22 +605,69 @@ class MainActivity : Activity() {
         }
         // نعكس ترتيب الأعمدة داخل الصف حتى يظهر رقم الطالب ثم اسمه عند أقصى اليمين،
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
+        
+        val headerHeight = dp(120)
+        val verticalWidth = dp(82)
+
         val header = TableRow(this).apply {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
             scaleX = -1f
         }
-        fun addCell(row: TableRow, view: View, width: Int) {
-            view.scaleX = -1f
-            val height = if (row === header) dp(112) else dp(58)
-            row.addView(view, TableRow.LayoutParams(dp(width), height))
-        }
-        listOf("م", "اسم الطالب", "النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
-            .forEachIndexed { index, label ->
-                val headCell = cellText(label, true)
-                headCell.rotation = 270f
-                addCell(header, headCell, if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76)
+
+        fun addVerticalHeader(row: TableRow, label: String, width: Int) {
+            val frame = FrameLayout(this).apply {
+                setBackgroundColor(green)
             }
+
+            val word = TextView(this).apply {
+                text = label
+                textSize = 14f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                rotation = 270f
+            }
+
+            frame.addView(
+                word,
+                FrameLayout.LayoutParams(
+                    headerHeight,
+                    dp(width),
+                    Gravity.CENTER
+                )
+            )
+
+            row.addView(
+                frame,
+                TableRow.LayoutParams(dp(width), headerHeight)
+            )
+        }
+
+        fun addNormalHeader(row: TableRow, label: String, width: Int) {
+            val cell = cellText(label, true)
+            cell.scaleX = -1f
+            row.addView(
+                cell,
+                TableRow.LayoutParams(dp(width), headerHeight)
+            )
+        }
+
+        addNormalHeader(header, "م", 42)
+        addNormalHeader(header, "اسم الطالب", 190)
+
+        listOf(
+            "النوع",
+            "الواجبات 20",
+            "المواظبة 20",
+            "الشفهي 20",
+            "التحريري 40",
+            "المجموع 100",
+            "المتوسط 20"
+        ).forEach {
+            addVerticalHeader(header, it, 82)
+        }
+
         table.addView(header)
+
 
         data class GradeRow(val student: String, val gender: Spinner, val fields: List<EditText>, val total: TextView, val average: TextView)
         val gradeRows = mutableListOf<GradeRow>()
