@@ -15,14 +15,105 @@ import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.util.zip.ZipInputStream
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
-    private val green = Color.rgb(23, 107, 85)
+      private fun xmlSafe(value: String): String {
+        return value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+    }
+
+    private fun excelColumn(number: Int): String {
+        var n = number
+        var result = ""
+        while (n > 0) {
+            val r = (n - 1) % 26
+            result = ('A' + r) + result
+            n = (n - 1) / 26
+        }
+        return result
+    }
+
+    private fun createExcelFile(rows: List<List<String>>): ByteArray {
+        val sheet = StringBuilder()
+        sheet.append("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>""")
+        sheet.append("""<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>""")
+
+        rows.forEachIndexed { rowIndex, row ->
+            val rowNumber = rowIndex + 1
+            sheet.append("""<row r="$rowNumber">""")
+
+            row.forEachIndexed { colIndex, value ->
+                val cell = "${excelColumn(colIndex + 1)}$rowNumber"
+                sheet.append("""<c r="$cell" t="inlineStr"><is><t xml:space="preserve">${xmlSafe(value)}</t></is></c>""")
+            }
+
+            sheet.append("</row>")
+        }
+
+        sheet.append("</sheetData></worksheet>")
+
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            fun addFile(name: String, content: String) {
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(content.toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
+            }
+
+            addFile(
+                "[Content_Types].xml",
+                """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                <Default Extension="xml" ContentType="application/xml"/>
+                <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                </Types>"""
+            )
+
+            addFile(
+                "_rels/.rels",
+                """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>"""
+            )
+
+            addFile(
+                "xl/workbook.xml",
+                """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                <sheets><sheet name="كشف البيانات" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>"""
+            )
+
+            addFile(
+                "xl/_rels/workbook.xml.rels",
+                """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                </Relationships>"""
+            )
+
+            addFile("xl/worksheets/sheet1.xml", sheet.toString())
+        }
+
+        return output.toByteArray()
+    }
+  private val green = Color.rgb(23, 107, 85)
     private val prefs by lazy { getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE) }
     private lateinit var root: LinearLayout
     private val pickExcelRequest = 4101
-    private data class SheetInfo(val name: String, val path: String)
+  private val saveExcelRequest = 4102
+private var pendingExcelData: ByteArray? = null
+  private data class SheetInfo(val name: String, val path: String)
     private data class ExcelBook(val entries: Map<String, ByteArray>, val sheets: List<SheetInfo>, val sharedStrings: List<String>)
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); showHome() }
 
@@ -139,7 +230,24 @@ class MainActivity : Activity() {
     @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
         super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode==pickExcelRequest && resultCode==RESULT_OK) {
+         if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
+            val uri = data?.data
+            val bytes = pendingExcelData
+
+            if (uri != null && bytes != null) {
+                try {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(bytes)
+                    }
+                    toast("تم تصدير ملف Excel بنجاح")
+                } catch (e: Exception) {
+                    showError("تعذر حفظ ملف Excel")
+                }
+            }
+
+            pendingExcelData = null
+            return
+        }       if(requestCode==pickExcelRequest && resultCode==RESULT_OK) {
             val uri=data?.data ?: return
             try { val book=readWorkbook(uri); if(book.sheets.isEmpty()) showError("لم أجد أوراق عمل في الملف.") else chooseSheet(book) }
             catch(e:Exception) { showError("تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور.") }
@@ -271,7 +379,19 @@ class MainActivity : Activity() {
         }
         root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
         root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
+        val exportButton = Button(this).apply {
+            text = "تصدير كشف الحضور إلى Excel"
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            setBackgroundColor(green)
+        }
 
+        root.addView(
+            exportButton,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(5)
+            }
+        )
         fun key(cls: String, month: String, week: String) =
             "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
@@ -419,7 +539,68 @@ class MainActivity : Activity() {
             val all = currentValues.values.flatten()
             toast("تم الحفظ — حاضر: ${all.count { it == "✓" }}، غائب: ${all.count { it == "غ" }}، بعذر: ${all.count { it == "م" }}")
         }
-        summaryButton.setOnClickListener {
+           exportButton.setOnClickListener {
+            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
+            val month = monthSpinner.selectedItem?.toString() ?: months.first()
+            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
+
+            val names = classStudentNames(cls)
+
+            val rows = mutableListOf<List<String>>()
+            rows.add(listOf("كشف الحضور والغياب"))
+            rows.add(listOf("الصف", cls))
+            rows.add(listOf("الشهر", month))
+            rows.add(listOf("الأسبوع", week))
+            rows.add(
+                listOf(
+                    "م",
+                    "اسم الطالب",
+                    "السبت",
+                    "الأحد",
+                    "الاثنين",
+                    "الثلاثاء",
+                    "الأربعاء",
+                    "الخميس"
+                )
+            )
+
+            names.forEachIndexed { index, name ->
+                val values = currentValues[name] ?: MutableList(6) { "" }
+
+                rows.add(
+                    listOf((index + 1).toString(), name) +
+                        values.map {
+                            when (it) {
+                                "✓" -> "حاضر"
+                                "غ" -> "غائب"
+                                "م" -> "بعذر"
+                                else -> ""
+                            }
+                        }
+                )
+            }
+
+            try {
+                pendingExcelData = createExcelFile(rows)
+
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    putExtra(
+                        Intent.EXTRA_TITLE,
+                        "كشف الحضور - $cls - $month - $week.xlsx"
+                    )
+                }
+
+                startActivityForResult(intent, saveExcelRequest)
+
+            } catch (e: Exception) {
+                pendingExcelData = null
+                showError("تعذر تجهيز ملف Excel للتصدير")
+            }
+        }   
+
+  summaryButton.setOnClickListener {
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
             val month = monthSpinner.selectedItem?.toString() ?: months.first()
             val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
