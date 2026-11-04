@@ -804,8 +804,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
         }
         dialog.show()
     }
-
-    private fun getSubjectMarks(className: String, term: String, student: String, subject: String): SubjectMarks? {
+  private fun getSubjectMarks(className: String, term: String, student: String, subject: String): SubjectMarks? {
         val parts = listOf("homework", "attendance", "oral", "written")
         val values = parts.map { prefs.getString(resultGradeKey(className, term, student, subject, it), null)?.toDoubleOrNull() }
         if (values.any { it == null }) return null
