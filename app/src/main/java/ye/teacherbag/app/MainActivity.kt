@@ -615,38 +615,6 @@ class MainActivity : Activity() {
         }
 
         fun addVerticalHeader(row: TableRow, label: String, width: Int) {
-            val frame = FrameLayout(this).apply {
-    scaleX = -1f
-    background = android.graphics.drawable.GradientDrawable().apply {
-        setColor(BLUE)
-        setStroke(dp(1), Color.rgb(230,120,30)      cornerRadius = dp(5).toFloat()
-    }
-}
-
-            val word = TextView(this).apply {
-                text = label
-                textSize = 14f
-                gravity = Gravity.CENTER
-                setTextColor(Color.WHITE)
-                rotation = 270f
-            }
-
-            frame.addView(
-                word,
-                FrameLayout.LayoutParams(
-                    headerHeight,
-                    dp(width),
-                    Gravity.CENTER
-                )
-            )
-
-            row.addView(
-                frame,
-                TableRow.LayoutParams(dp(width), headerHeight)
-            )
-        }
-
-        fun addVerticalHeader(row: TableRow, label: String, width: Int) {
     val frame = FrameLayout(this).apply {
         scaleX = -1f
         background = android.graphics.drawable.GradientDrawable().apply {
