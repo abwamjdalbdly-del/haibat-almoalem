@@ -668,7 +668,15 @@ class MainActivity : Activity() {
 
         table.addView(header)
 
-
+fun addCell(row: TableRow, view: View, width: Int) {
+    view.scaleX = -1f
+    row.addView(
+        view,
+        TableRow.LayoutParams(dp(width), dp(58)).apply {
+            setMargins(dp(1), dp(1), dp(1), dp(1))
+        }
+    )
+}
         data class GradeRow(val student: String, val gender: Spinner, val fields: List<EditText>, val total: TextView, val average: TextView)
         val gradeRows = mutableListOf<GradeRow>()
         students.forEachIndexed { index, student ->
