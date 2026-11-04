@@ -646,7 +646,27 @@ class MainActivity : Activity() {
         TableRow.LayoutParams(dp(width), headerHeight)
     )
 }
+fun addNormalHeader(row: TableRow, label: String, width: Int) {
+    val view = TextView(this).apply {
+        text = label
+        textSize = 14f
+        gravity = Gravity.CENTER
+        setTextColor(Color.WHITE)
+        scaleX = -1f
+        setPadding(dp(4), dp(5), dp(4), dp(5))
 
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(Color.rgb(23, 107, 85))
+            setStroke(dp(1), Color.WHITE)
+            cornerRadius = dp(5).toFloat()
+        }
+    }
+
+    row.addView(
+        view,
+        TableRow.LayoutParams(dp(width), headerHeight)
+    )
+}
         addNormalHeader(header, "م", 42)
         addNormalHeader(header, "اسم الطالب", 190)
 
