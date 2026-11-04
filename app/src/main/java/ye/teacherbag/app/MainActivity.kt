@@ -24,7 +24,6 @@ class MainActivity : Activity() {
     private val pickExcelRequest = 4101
     private data class SheetInfo(val name: String, val path: String)
     private data class ExcelBook(val entries: Map<String, ByteArray>, val sheets: List<SheetInfo>, val sharedStrings: List<String>)
-
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); showHome() }
 
     private fun setup(title: String) {
