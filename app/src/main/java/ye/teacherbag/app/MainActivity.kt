@@ -632,10 +632,10 @@ class MainActivity : Activity() {
             addCell(row, cellText((index + 1).toString()), 42)
             addCell(row, cellText(student), 190)
             val gender = Spinner(this).apply {
-                adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("ذكور", "إناث"))
+                adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("ذكر", "أنثى"))
                 val gKey = "result_gender_v1_${Uri.encode(className)}_${Uri.encode(student)}"
-                val saved = prefs.getString(gKey, "ذكور") ?: "ذكور"
-                setSelection(if (saved == "إناث") 1 else 0)
+                val saved = prefs.getString(gKey, "ذكر") ?: "ذكر"
+                setSelection(if (saved == "أنثى") 1 else 0)
             }
             addCell(row, gender, 82)
             val parts = listOf("homework", "attendance", "oral", "written")
