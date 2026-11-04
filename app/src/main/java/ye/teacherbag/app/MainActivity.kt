@@ -616,15 +616,20 @@ class MainActivity : Activity() {
 
         fun addVerticalHeader(row: TableRow, label: String, width: Int) {
             val frame = FrameLayout(this).apply {
-                setBackgroundColor(green)
-            }
+    scaleX = -1f
+    background = android.graphics.drawable.GradientDrawable().apply {
+        setColor(green)
+        setStroke(dp(1), Color.WHITE)
+        cornerRadius = dp(5).toFloat()
+    }
+}
 
             val word = TextView(this).apply {
                 text = label
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTextColor(Color.WHITE)
-                rotation = 270f
+                rotation = 90f
             }
 
             frame.addView(
@@ -707,7 +712,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
             }
             val totalView = cellText("—")
             val averageView = cellText("—")
-            addCell(row, totalView, 76); addCell(row, averageView, 76)
+            addCell(row, totalView, 82); addCell(row, averageView, 82)
             fun updateTotals() {
                 val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
                 if (values.all { it != null }) {
