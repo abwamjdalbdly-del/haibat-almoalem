@@ -324,7 +324,7 @@ class MainActivity : Activity() {
                     gravity = Gravity.CENTER
                     setTextColor(Color.BLACK)
                     includeFontPadding = true
-                    rotation = 90f
+                    rotation = 270f
                 }
                 cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
                 header.addView(cell, TableRow.LayoutParams(currentDayWidth, headerHeight).apply {
@@ -617,7 +617,7 @@ class MainActivity : Activity() {
         listOf("م", "اسم الطالب", "النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
             .forEachIndexed { index, label ->
                 val headCell = cellText(label, true)
-                if (index <= 3) headCell.rotation = 270f // من أعلى إلى أسفل
+                headCell.rotation = 270f
                 addCell(header, headCell, if (index == 1) 190 else if (index == 0) 42 else if (index in 2..6) 82 else 76)
             }
         table.addView(header)
