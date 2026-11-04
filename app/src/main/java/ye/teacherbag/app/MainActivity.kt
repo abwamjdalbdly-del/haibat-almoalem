@@ -646,14 +646,39 @@ class MainActivity : Activity() {
             )
         }
 
-        fun addNormalHeader(row: TableRow, label: String, width: Int) {
-            val cell = cellText(label, true)
-            cell.scaleX = -1f
-            row.addView(
-                cell,
-                TableRow.LayoutParams(dp(width), headerHeight)
-            )
+        fun addVerticalHeader(row: TableRow, label: String, width: Int) {
+    val frame = FrameLayout(this).apply {
+        scaleX = -1f
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(Color.rgb(23, 107, 85))
+            setStroke(dp(1), Color.WHITE)
+            cornerRadius = dp(5).toFloat()
         }
+    }
+
+    val word = TextView(this).apply {
+        text = label
+        textSize = 13f
+        gravity = Gravity.CENTER
+        setTextColor(Color.WHITE)
+        rotation = 90f
+        includeFontPadding = false
+    }
+
+    frame.addView(
+        word,
+        FrameLayout.LayoutParams(
+            headerHeight,
+            dp(width),
+            Gravity.CENTER
+        )
+    )
+
+    row.addView(
+        frame,
+        TableRow.LayoutParams(dp(width), headerHeight)
+    )
+}
 
         addNormalHeader(header, "م", 42)
         addNormalHeader(header, "اسم الطالب", 190)
@@ -667,7 +692,7 @@ class MainActivity : Activity() {
             "المجموع 100",
             "المتوسط 20"
         ).forEach {
-            addVerticalHeader(header, it, 62)
+            addVerticalHeader(header, it, 52)
         }
 
         table.addView(header)
