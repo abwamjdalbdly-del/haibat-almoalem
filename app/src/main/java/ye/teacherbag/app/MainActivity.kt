@@ -606,7 +606,7 @@ class MainActivity : Activity() {
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         
         val headerHeight = dp(120)
-        val verticalWidth = dp(52)
+        val verticalWidth = dp(42)
 
         val header = TableRow(this).apply {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -679,7 +679,7 @@ fun addNormalHeader(row: TableRow, label: String, width: Int) {
             "المجموع 100",
             "المتوسط 20"
         ).forEach {
-            addVerticalHeader(header, it, 52)
+            addVerticalHeader(header, it, 42)
         }
 
         table.addView(header)
@@ -708,7 +708,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
                 val saved = prefs.getString(gKey, "ذكر") ?: "ذكر"
                 setSelection(if (saved == "أنثى") 1 else 0)
             }
-            addCell(row, gender, 52)
+            addCell(row, gender, 42)
             val parts = listOf("homework", "attendance", "oral", "written")
             val maxima = listOf(20.0, 20.0, 20.0, 40.0)
             val fields = parts.mapIndexed { partIndex, part ->
@@ -718,12 +718,12 @@ fun addCell(row: TableRow, view: View, width: Int) {
                     hint = "—"; setPadding(dp(2), dp(4), dp(2), dp(4)); setBackgroundColor(Color.WHITE)
                     setText(prefs.getString(resultGradeKey(className, term, student, subject.name, part), "") ?: "")
                 }
-                addCell(row, edit, 52)
+                addCell(row, edit, 42)
                 edit
             }
             val totalView = cellText("—")
             val averageView = cellText("—")
-            addCell(row, totalView, 52); addCell(row, averageView, 52)
+            addCell(row, totalView, 42); addCell(row, averageView, 42)
             fun updateTotals() {
                 val values = fields.map { it.text.toString().trim().toDoubleOrNull() }
                 if (values.all { it != null }) {
