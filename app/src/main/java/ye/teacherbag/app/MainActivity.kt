@@ -274,47 +274,7 @@ private var pendingExcelData: ByteArray? = null
         }
     }
 
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
-            val uri = data?.data
-            val bytes = pendingExcelData
-
-            if (uri != null && bytes != null) {
-                try {
-                    contentResolver.openOutputStream(uri)?.use {
-                        it.write(bytes)
-                    }
-                    toast("تم تصدير ملف Excel بنجاح")
-                } catch (e: Exception) {
-                    showError("تعذر حفظ ملف Excel")
-                }
-            }
-
-            pendingExcelData = null
-            return
-        }
-
-        if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-
-            try {
-                val book = readWorkbook(uri)
-
-                if (book.sheets.isEmpty()) {
-                    showError("لم أجد أوراق عمل في الملف.")
-                } else {
-                    chooseSheet(book)
-                }
-            } catch (e: Exception) {
-                showError(
-                    "تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور."
-                )
-            }
-        }
-    }
-
-
+        
     private fun chooseSheet(book:ExcelBook) {
         AlertDialog.Builder(this).setTitle("اختر الصف / ورقة العمل")
             .setItems(book.sheets.map{it.name}.toTypedArray()) { _,which -> showImportOptions(book,book.sheets[which]) }
