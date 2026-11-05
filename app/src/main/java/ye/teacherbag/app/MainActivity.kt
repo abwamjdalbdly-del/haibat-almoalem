@@ -112,6 +112,8 @@ class MainActivity : Activity() {
     private lateinit var root: LinearLayout
     private val pickExcelRequest = 4101
   private val saveExcelRequest = 4102
+private val savePdfRequest = 4103
+private var pendingPdfData: ByteArray? = null
 private var pendingExcelData: ByteArray? = null
   private data class SheetInfo(val name: String, val path: String)
     private data class ExcelBook(val entries: Map<String, ByteArray>, val sheets: List<SheetInfo>, val sharedStrings: List<String>)
@@ -251,7 +253,26 @@ private var pendingExcelData: ByteArray? = null
                 }
             }
 
-            pendingExcelData = null
+ 
+        if (requestCode == savePdfRequest && resultCode == RESULT_OK) {
+            val uri = data?.data
+            val bytes = pendingPdfData
+
+            if (uri != null && bytes != null) {
+                try {
+                    contentResolver.openOutputStream(uri)?.use { output ->
+                        output.write(bytes)
+                    }
+                    toast("تم تصدير كشف الحضور إلى PDF بنجاح")
+                } catch (e: Exception) {
+                    showError("تعذر حفظ ملف PDF")
+                }
+            }
+
+            pendingPdfData = null
+            return
+        }
+           pendingExcelData = null
             return
         }
 
@@ -413,7 +434,60 @@ private var pendingExcelData: ByteArray? = null
                 topMargin = dp(5)
             }
         )
-        fun key(cls: String, month: String, week: String) =
+     
+        val pdfButton = Button(this).apply {
+            text = "تصدير كشف الحضور إلى PDF"
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.rgb(40, 100, 200))
+        }
+
+        root.addView(
+            pdfButton,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(5)
+            }
+        )
+ 
+        pdfButton.setOnClickListener {
+            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
+            val month = monthSpinner.selectedItem?.toString() ?: months.first()
+            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
+
+            val names = classStudentNames(cls)
+
+            if (names.isEmpty()) {
+                toast("لا توجد أسماء طلاب لتصديرها")
+                return@setOnClickListener
+            }
+
+            try {
+                pendingPdfData = createAttendancePdf(
+                    cls,
+                    month,
+                    week,
+                    names,
+                    currentValues
+                )
+
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/pdf"
+                    putExtra(
+                        Intent.EXTRA_TITLE,
+                        "كشف الحضور - $cls - $month - $week.pdf"
+                    )
+                }
+
+                startActivityForResult(intent, savePdfRequest)
+
+            } catch (e: Exception) {
+                pendingPdfData = null
+                showError("تعذر تجهيز كشف PDF")
+            }
+        }
+ 
+ fun key(cls: String, month: String, week: String) =
             "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
         var currentValues = linkedMapOf<String, MutableList<String>>()
@@ -1186,4 +1260,280 @@ fun addCell(row: TableRow, view: View, width: Int) {
         }
         return (firstRow..lastRow).mapNotNull{result[it]}
     }
+
+private fun createAttendancePdf(
+    className: String,
+    month: String,
+    week: String,
+    names: List<String>,
+    values: Map<String, List<String>>
+): ByteArray {
+    val document = android.graphics.pdf.PdfDocument()
+    val output = ByteArrayOutputStream()
+
+    val pageWidth = 842
+    val pageHeight = 595
+    val margin = 24
+    val rowsPerPage = 25
+
+    val numberWidth = 30f
+    val nameWidth = 205f
+    val dayWidth = 90f
+    val headerHeight = 30f
+    val rowHeight = 17f
+
+    val borderPaint = android.graphics.Paint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.DKGRAY
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 0.7f
+    }
+
+    val fillPaint = android.graphics.Paint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.rgb(220, 240, 248)
+        style = android.graphics.Paint.Style.FILL
+    }
+
+    val whitePaint = android.graphics.Paint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.WHITE
+        style = android.graphics.Paint.Style.FILL
+    }
+
+    val textPaint = android.text.TextPaint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.BLACK
+        textSize = 10f
+    }
+
+    val titlePaint = android.text.TextPaint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.BLACK
+        textSize = 19f
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
+
+    val headerPaint = android.text.TextPaint(
+        android.graphics.Paint.ANTI_ALIAS_FLAG
+    ).apply {
+        color = Color.BLACK
+        textSize = 10f
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
+
+    fun drawText(
+        canvas: android.graphics.Canvas,
+        text: String,
+        x: Float,
+        y: Float,
+        width: Int,
+        height: Int,
+        paint: android.text.TextPaint
+    ) {
+        val content = text.ifBlank { " " }
+
+        val layout = android.text.StaticLayout.Builder.obtain(
+            content,
+            0,
+            content.length,
+            paint,
+            width
+        )
+            .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+            .setTextDirection(android.text.TextDirectionHeuristics.RTL)
+            .setIncludePad(false)
+            .build()
+
+        canvas.save()
+        canvas.translate(
+            x,
+            y + (height - layout.height) / 2f
+        )
+        layout.draw(canvas)
+        canvas.restore()
+    }
+
+    val totalPages = maxOf(1, (names.size + rowsPerPage - 1) / rowsPerPage)
+
+    for (pageIndex in 0 until totalPages) {
+        val pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(
+            pageWidth,
+            pageHeight,
+            pageIndex + 1
+        ).create()
+
+        val page = document.startPage(pageInfo)
+        val canvas = page.canvas
+
+        val centerX = pageWidth / 2f
+
+        drawText(
+            canvas,
+            "كشف الحضور والغياب",
+            250f,
+            15f,
+            342,
+            30,
+            titlePaint
+        )
+
+        drawText(
+            canvas,
+            "الصف: $className    الشهر: $month    $week",
+            100f,
+            48f,
+            642,
+            24,
+            headerPaint
+        )
+
+        val tableTop = 82f
+        val rightEdge = pageWidth - margin.toFloat()
+
+        var x = rightEdge - nameWidth
+
+        fun drawCell(
+            text: String,
+            left: Float,
+            top: Float,
+            width: Float,
+            height: Float,
+            header: Boolean = false
+        ) {
+            canvas.drawRect(
+                left,
+                top,
+                left + width,
+                top + height,
+                if (header) fillPaint else whitePaint
+            )
+
+            canvas.drawRect(
+                left,
+                top,
+                left + width,
+                top + height,
+                borderPaint
+            )
+
+            drawText(
+                canvas,
+                text,
+                left + 2f,
+                top + 1f,
+                (width - 4f).toInt(),
+                (height - 2f).toInt(),
+                if (header) headerPaint else textPaint
+            )
+        }
+
+        // اسم الطالب في أقصى اليمين.
+        drawCell("اسم الطالب", x, tableTop, nameWidth, headerHeight, true)
+
+        // رقم الطالب إلى يسار الاسم.
+        x -= numberWidth
+        drawCell("م", x, tableTop, numberWidth, headerHeight, true)
+
+        // أيام الأسبوع إلى يسار الرقم.
+        val days = listOf(
+            "السبت",
+            "الأحد",
+            "الاثنين",
+            "الثلاثاء",
+            "الأربعاء",
+            "الخميس"
+        )
+
+        days.forEach { day ->
+            x -= dayWidth
+            drawCell(day, x, tableTop, dayWidth, headerHeight, true)
+        }
+
+        val start = pageIndex * rowsPerPage
+        val end = minOf(start + rowsPerPage, names.size)
+
+        for (index in start until end) {
+            val name = names[index]
+            val rowTop = tableTop + headerHeight +
+                (index - start) * rowHeight
+
+            var cellX = rightEdge - nameWidth
+
+            drawCell(
+                name,
+                cellX,
+                rowTop,
+                nameWidth,
+                rowHeight
+            )
+
+            cellX -= numberWidth
+
+            drawCell(
+                (index + 1).toString(),
+                cellX,
+                rowTop,
+                numberWidth,
+                rowHeight
+            )
+
+            val studentValues = values[name] ?: emptyList()
+
+            days.indices.forEach { day ->
+                cellX -= dayWidth
+
+                val mark = when (studentValues.getOrNull(day) ?: "") {
+                    "✓" -> "حاضر"
+                    "غ" -> "غائب"
+                    "م" -> "بعذر"
+                    else -> ""
+                }
+
+                drawCell(
+                    mark,
+                    cellX,
+                    rowTop,
+                    dayWidth,
+                    rowHeight
+                )
+            }
+        }
+
+        val footerY = pageHeight - 28f
+
+        drawText(
+            canvas,
+            "توقيع المعلم: ............................       توقيع الإدارة: ............................",
+            80f,
+            footerY,
+            682,
+            20,
+            textPaint
+        )
+
+        drawText(
+            canvas,
+            "صفحة ${pageIndex + 1} من $totalPages",
+            10f,
+            pageHeight - 18f,
+            120,
+            15,
+            textPaint
+        )
+
+        document.finishPage(page)
+    }
+
+    document.writeTo(output)
+    document.close()
+
+    return output.toByteArray()
+}
+
 }
