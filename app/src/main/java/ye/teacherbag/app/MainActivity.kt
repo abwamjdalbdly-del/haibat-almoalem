@@ -375,7 +375,7 @@ private var pendingExcelData: ByteArray? = null
         val classSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, classes)
         }
-        val months = listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")
+        val months = listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")
         val monthSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, months)
         }
@@ -535,7 +535,7 @@ root.addView(
             val dayWidth = dp(50)
             
             val headerHeight = dp(85)
-            val rowHeight = dp(65)
+            val rowHeight = dp(35)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب الأعمدة من اليمين إلى اليسار: اسم الطالب ثم الأيام.
@@ -669,15 +669,15 @@ root.addView(
             rows.add(listOf("الأسبوع", week))
             rows.add(
                 listOf(
-                    "م",
-                    "اسم الطالب",
-                    "السبت",
-                    "الأحد",
-                    "الاثنين",
-                    "الثلاثاء",
-                    "الأربعاء",
-                    "الخميس"
-                )
+    "اسم الطالب",
+    "م",
+    "السبت",
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس"
+)
             )
 
             names.forEachIndexed { index, name ->
@@ -775,7 +775,7 @@ root.addView(
         val termInput = EditText(this).apply { hint = "مثال: الفصل الأول 2026"; textSize = 17f }
         root.addView(termInput, LinearLayout.LayoutParams(-1, -2))
         root.addView(TextView(this).apply { text = "الشهر المراد إدخال درجاته:"; textSize = 16f; setPadding(0, 10, 0, 2) })
-        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الشهر الأول", "الشهر الثاني", "الشهر الثالث")) }
+        val monthSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")) }
         root.addView(monthSpinner)
         addButton("إدارة المواد الدراسية") { manageSubjects(classSpinner.selectedItem?.toString() ?: classes.first()) }
         addButton("إدخال درجات الطلاب") {
