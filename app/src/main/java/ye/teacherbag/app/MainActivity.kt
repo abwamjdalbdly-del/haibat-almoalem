@@ -382,21 +382,42 @@ private var pendingExcelData: ByteArray? = null
         val weekSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, (1..5).map { "الأسبوع: $it" })
         }
-        fun label(t: String) {
-            root.addView(TextView(this).apply {
-                text = t
-                textSize = 16f
-                setTextColor(green)
-                setPadding(0, dp(7), 0, dp(2))
-            })
-        }
-        label("الصف الدراسي")
-        root.addView(classSpinner)
-        label("الشهر")
-        root.addView(monthSpinner)
-        label("الأسبوع")
-        root.addView(weekSpinner)
+        // وضع الصف والشهر والأسبوع في صف واحد
+val selectorsRow = LinearLayout(this).apply {
+    orientation = LinearLayout.HORIZONTAL
+    layoutDirection = View.LAYOUT_DIRECTION_RTL
+    gravity = Gravity.CENTER_VERTICAL
+}
 
+fun addSelector(title: String, spinner: Spinner) {
+    val column = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(2), 0, dp(2), 0)
+    }
+
+    column.addView(TextView(this).apply {
+        text = title
+        textSize = 13f
+        gravity = Gravity.CENTER
+        setTextColor(green)
+    })
+
+    column.addView(spinner)
+
+    selectorsRow.addView(
+        column,
+        LinearLayout.LayoutParams(0, -2, 1f)
+    )
+}
+
+addSelector("الصف الدراسي", classSpinner)
+addSelector("الشهر", monthSpinner)
+addSelector("الأسبوع", weekSpinner)
+
+root.addView(
+    selectorsRow,
+    LinearLayout.LayoutParams(-1, -2)
+)
         // Scroll vertically for long class lists and horizontally for all six days.
         val verticalScroll = ScrollView(this)
         val horizontalScroll = HorizontalScrollView(this).apply {
@@ -406,7 +427,7 @@ private var pendingExcelData: ByteArray? = null
         }
         val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
-        verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-2, -2))
+       verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2)) 
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val saveButton = Button(this).apply {
@@ -514,7 +535,7 @@ private var pendingExcelData: ByteArray? = null
             val dayWidth = dp(50)
             
             val headerHeight = dp(85)
-            val rowHeight = dp(100)
+            val rowHeight = dp(65)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
             // ترتيب الأعمدة من اليمين إلى اليسار: اسم الطالب ثم الأيام.
