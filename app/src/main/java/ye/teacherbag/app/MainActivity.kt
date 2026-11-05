@@ -669,8 +669,8 @@ root.addView(
             rows.add(listOf("الأسبوع", week))
             rows.add(
                 listOf(
-    "اسم الطالب",
     "م",
+    " اسم الطالب ",
     "السبت",
     "الأحد",
     "الاثنين",
