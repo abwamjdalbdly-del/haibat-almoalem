@@ -227,7 +227,6 @@ private var pendingExcelData: ByteArray? = null
         try { startActivityForResult(intent,pickExcelRequest) } catch(e:Exception) { showError("تعذر فتح نافذة اختيار الملفات.") }
     }
 
-    @Deprecated("Using startActivityForResult for compatibility")
     
     @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(
@@ -235,6 +234,46 @@ private var pendingExcelData: ByteArray? = null
         resultCode: Int,
         data: Intent?
     ) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
+            val uri = data?.data
+            val bytes = pendingExcelData
+
+            if (uri != null && bytes != null) {
+                try {
+                    contentResolver.openOutputStream(uri)?.use { output ->
+                        output.write(bytes)
+                    }
+                    toast("تم تصدير ملف Excel بنجاح")
+                } catch (e: Exception) {
+                    showError("تعذر حفظ ملف Excel")
+                }
+            }
+
+            pendingExcelData = null
+            return
+        }
+
+        if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+
+            try {
+                val book = readWorkbook(uri)
+
+                if (book.sheets.isEmpty()) {
+                    showError("لم أجد أوراق عمل في الملف.")
+                } else {
+                    chooseSheet(book)
+                }
+            } catch (e: Exception) {
+                showError(
+                    "تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور."
+                )
+            }
+        }
+    }
+
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
