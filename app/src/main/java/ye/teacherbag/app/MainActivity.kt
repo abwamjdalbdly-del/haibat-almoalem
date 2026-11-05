@@ -231,6 +231,8 @@ private var pendingExcelData: ByteArray? = null
 
     
     @Deprecated("Using startActivityForResult for compatibility")
+    override fun  
+    @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
@@ -238,41 +240,43 @@ private var pendingExcelData: ByteArray? = null
     ) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
-            val uri = data?.data
-            val bytes = pendingExcelData
+        if (requestCode == saveExcelRequest) {
+            if (resultCode == RESULT_OK) {
+                val uri = data?.data
+                val bytes = pendingExcelData
 
-            if (uri != null && bytes != null) {
-                try {
-                    contentResolver.openOutputStream(uri)?.use { output ->
-                        output.write(bytes)
+                if (uri != null && bytes != null) {
+                    try {
+                        contentResolver.openOutputStream(uri)?.use { output ->
+                            output.write(bytes)
+                        }
+                        toast("تم تصدير ملف Excel بنجاح")
+                    } catch (e: Exception) {
+                        showError("تعذر حفظ ملف Excel")
                     }
-                    toast("تم تصدير ملف Excel بنجاح")
-                } catch (e: Exception) {
-                    showError("تعذر حفظ ملف Excel")
                 }
             }
-
- 
-        if (requestCode == savePdfRequest && resultCode == RESULT_OK) {
-            val uri = data?.data
-            val bytes = pendingPdfData
-
-            if (uri != null && bytes != null) {
-                try {
-                    contentResolver.openOutputStream(uri)?.use { output ->
-                        output.write(bytes)
-                    }
-                    toast("تم تصدير كشف الحضور إلى PDF بنجاح")
-                } catch (e: Exception) {
-                    showError("تعذر حفظ ملف PDF")
-                }
-            }
-
-            pendingPdfData = null
+            pendingExcelData = null
             return
         }
-           pendingExcelData = null
+
+        if (requestCode == savePdfRequest) {
+            if (resultCode == RESULT_OK) {
+                val uri = data?.data
+                val bytes = pendingPdfData
+
+                if (uri != null && bytes != null) {
+                    try {
+                        contentResolver.openOutputStream(uri)?.use { output ->
+                            output.write(bytes)
+                        }
+                        toast("تم تصدير كشف الحضور إلى PDF بنجاح")
+                    } catch (e: Exception) {
+                        showError("تعذر حفظ ملف PDF")
+                    }
+                }
+            }
+            pendingPdfData = null
             return
         }
 
@@ -294,8 +298,7 @@ private var pendingExcelData: ByteArray? = null
             }
         }
     }
-
-        
+    
     private fun chooseSheet(book:ExcelBook) {
         AlertDialog.Builder(this).setTitle("اختر الصف / ورقة العمل")
             .setItems(book.sheets.map{it.name}.toTypedArray()) { _,which -> showImportOptions(book,book.sheets[which]) }
@@ -448,7 +451,7 @@ private var pendingExcelData: ByteArray? = null
                 topMargin = dp(5)
             }
         )
- 
+ var currentValues = linkedMapOf<String, MutableList<String>>()
         pdfButton.setOnClickListener {
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
             val month = monthSpinner.selectedItem?.toString() ?: months.first()
@@ -490,7 +493,7 @@ private var pendingExcelData: ByteArray? = null
  fun key(cls: String, month: String, week: String) =
             "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
-        var currentValues = linkedMapOf<String, MutableList<String>>()
+        
         fun render() {
             tableHost.removeAllViews()
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
