@@ -230,7 +230,9 @@ private var pendingExcelData: ByteArray? = null
     @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
         super.onActivityResult(requestCode,resultCode,data)
-         if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
+         }
+
+if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
             val uri = data?.data
             val bytes = pendingExcelData
 
