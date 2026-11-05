@@ -228,11 +228,16 @@ private var pendingExcelData: ByteArray? = null
     }
 
     @Deprecated("Using startActivityForResult for compatibility")
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
-        super.onActivityResult(requestCode,resultCode,data)
-         }
+    
+    @Deprecated("Using startActivityForResult for compatibility")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
 
-if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
+        if (requestCode == saveExcelRequest && resultCode == RESULT_OK) {
             val uri = data?.data
             val bytes = pendingExcelData
 
@@ -249,12 +254,27 @@ if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
 
             pendingExcelData = null
             return
-        }       if(requestCode==pickExcelRequest && resultCode==RESULT_OK) {
-            val uri=data?.data ?: return
-            try { val book=readWorkbook(uri); if(book.sheets.isEmpty()) showError("لم أجد أوراق عمل في الملف.") else chooseSheet(book) }
-            catch(e:Exception) { showError("تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور.") }
+        }
+
+        if (requestCode == pickExcelRequest && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+
+            try {
+                val book = readWorkbook(uri)
+
+                if (book.sheets.isEmpty()) {
+                    showError("لم أجد أوراق عمل في الملف.")
+                } else {
+                    chooseSheet(book)
+                }
+            } catch (e: Exception) {
+                showError(
+                    "تعذر قراءة الملف. اختر ملف Excel بصيغة .xlsx غير محمي بكلمة مرور."
+                )
+            }
         }
     }
+
 
     private fun chooseSheet(book:ExcelBook) {
         AlertDialog.Builder(this).setTitle("اختر الصف / ورقة العمل")
