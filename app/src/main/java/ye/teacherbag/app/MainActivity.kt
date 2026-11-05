@@ -229,9 +229,6 @@ private var pendingExcelData: ByteArray? = null
         try { startActivityForResult(intent,pickExcelRequest) } catch(e:Exception) { showError("تعذر فتح نافذة اختيار الملفات.") }
     }
 
-    
-    @Deprecated("Using startActivityForResult for compatibility")
-    override fun  
     @Deprecated("Using startActivityForResult for compatibility")
     override fun onActivityResult(
         requestCode: Int,
