@@ -425,8 +425,10 @@ root.addView(
             isHorizontalScrollBarEnabled = true
             layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
-        val tableHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
+        val tableHost = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    layoutDirection = View.LAYOUT_DIRECTION_LTR
+} horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
        verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2)) 
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
