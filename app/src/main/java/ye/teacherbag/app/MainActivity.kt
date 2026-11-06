@@ -554,7 +554,7 @@ horizontalScroll.addView(
                     minimumWidth = 0
                     minimumHeight = 0
                     val shape = android.graphics.drawable.GradientDrawable().apply {
-                        setColor(Color.rgb(242, 246, 255))
+                        setColor(Color.rgb(0, 188, 212))
                         setStroke(dp(2), Color.DKGRAY)
                         cornerRadius = dp(18).toFloat()
                     }
@@ -624,7 +624,7 @@ horizontalScroll.addView(
                     textSize = 16f
                     gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
                     setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(255, 192, 203))
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(0, 188, 212))
                     setPadding(dp(10), dp(5), dp(10), dp(5))
                     maxLines = 2
                     ellipsize = android.text.TextUtils.TruncateAt.END
