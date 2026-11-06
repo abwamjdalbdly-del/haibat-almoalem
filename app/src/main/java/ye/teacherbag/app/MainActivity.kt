@@ -538,7 +538,7 @@ horizontalScroll.addView(
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
-            val nameWidth = dp(240)
+            val nameWidth = dp(150)
             val dayWidth = dp(35)
             
             val headerHeight = dp(85)
@@ -918,7 +918,7 @@ table.addView(TableRow(this).apply {
         // نعكس ترتيب الأعمدة داخل الصف حتى يظهر رقم الطالب ثم اسمه عند أقصى اليمين،
         // مع إبقاء النصوص والحقول بوضعها الطبيعي دون انعكاس.
         
-        val headerHeight = dp(110)
+        val headerHeight = dp(100)
         val verticalWidth = dp(35)
 
         val header = TableRow(this).apply {
@@ -969,7 +969,7 @@ fun addNormalHeader(row: TableRow, label: String, width: Int) {
         setPadding(dp(4), dp(5), dp(4), dp(5))
 
         background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.rgb(40, 100, 200))
+            setColor(Color.rgb(178, 235, 242))
             setStroke(dp(1), Color.WHITE)
             cornerRadius = dp(5).toFloat()
         }
@@ -981,7 +981,7 @@ fun addNormalHeader(row: TableRow, label: String, width: Int) {
     )
 }
         addNormalHeader(header, "م", 42)
-        addNormalHeader(header, "اسم الطالب", 190)
+        addNormalHeader(header, "اسم الطالب", 100)
 
         listOf(
             "النوع",
@@ -1014,7 +1014,7 @@ fun addCell(row: TableRow, view: View, width: Int) {
                 scaleX = -1f
             }
             addCell(row, cellText((index + 1).toString()), 35)
-            addCell(row, cellText(student), 190)
+            addCell(row, cellText(student), 100)
             val gender = Spinner(this).apply {
                 adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("ذكر", "أنثى"))
                 val gKey = "result_gender_v1_${Uri.encode(className)}_${Uri.encode(student)}"
