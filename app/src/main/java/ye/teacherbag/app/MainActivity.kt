@@ -532,7 +532,7 @@ root.addView(
                 setPadding(0, dp(3), 0, dp(8))
             }
             val nameWidth = dp(260)
-            val dayWidth = dp(50)
+            val dayWidth = dp(35)
             
             val headerHeight = dp(85)
             val rowHeight = dp(35)
