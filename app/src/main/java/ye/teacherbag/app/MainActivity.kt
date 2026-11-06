@@ -633,10 +633,17 @@ horizontalScroll.addView(
                 row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
                 table.addView(row)
 
-                val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
-                table.addView(TableRow(this).apply {
-                    addView(separator, TableRow.LayoutParams(nameWidth + dayWidth * 6, dp(1)))
-                })
+                val separator = View(this).apply {
+    setBackgroundColor(Color.LTGRAY)
+}
+table.addView(TableRow(this).apply {
+    addView(
+        separator,
+        TableRow.LayoutParams(-1, dp(1)).apply {
+            span = 7
+        }
+    )
+})
             }
             if (names.isEmpty()) {
                 tableHost.addView(TextView(this).apply {
