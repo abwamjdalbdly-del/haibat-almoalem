@@ -624,7 +624,7 @@ horizontalScroll.addView(
                     textSize = 16f
                     gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
                     setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(239, 244, 242))
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(255, 192, 203))
                     setPadding(dp(10), dp(5), dp(10), dp(5))
                     maxLines = 2
                     ellipsize = android.text.TextUtils.TruncateAt.END
