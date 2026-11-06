@@ -531,7 +531,7 @@ root.addView(
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
-            val nameWidth = dp(260)
+            val nameWidth = dp(240)
             val dayWidth = dp(35)
             
             val headerHeight = dp(85)
@@ -640,7 +640,9 @@ root.addView(
             } else {
                 tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
                 // إظهار الطرف الأيمن من الجدول حيث عمود أسماء الطلاب.
-                horizontalScroll.post { horizontalScroll.fullScroll(View.FOCUS_RIGHT) }
+                horizontalScroll.post {
+    horizontalScroll.scrollTo(0, 0)
+}
             }
         }
 
@@ -1314,7 +1316,7 @@ private fun createAttendancePdf(
     val fillPaint = android.graphics.Paint(
         android.graphics.Paint.ANTI_ALIAS_FLAG
     ).apply {
-        color = Color.rgb(220, 240, 248)
+        color = Color.rgb(20, 100, 200)
         style = android.graphics.Paint.Style.FILL
     }
 
