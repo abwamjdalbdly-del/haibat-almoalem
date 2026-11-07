@@ -464,7 +464,9 @@ root.addView(
 )  
  monthlyButton.setOnClickListener {
     showMonthlyAttendance()
-}   root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
+}
+
+root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
         val exportButton = Button(this).apply {
             text = "تصدير كشف الحضور إلى Excel"
             isAllCaps = false
