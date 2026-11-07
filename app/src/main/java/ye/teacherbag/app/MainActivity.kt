@@ -433,12 +433,12 @@ val tableHost = LinearLayout(this).apply {
 
 horizontalScroll.addView(
     tableHost,
-    ViewGroup.LayoutParams(-2, -2)
+    viewGroup.LayoutParams(-2, -2)
 )
 
 verticalScroll.addView(
     horizontalScroll,
-    ViewGroup.LayoutParams(-1, -2)
+    viewGroup.LayoutParams(-1, -2)
 )
 
 root.addView(
@@ -446,19 +446,19 @@ root.addView(
     LinearLayout.LayoutParams(-1, 0, 1f)
 )
 
+
 val saveButton = Button(this).apply {
     text = "حفظ سجل الأسبوع"
+    isAllCaps = false
+    setTextColor(Color.WHITE)
+    setBackgroundColor(green)
+}
 
-        val saveButton = Button(this).apply {
-            text = "حفظ سجل الأسبوع"
-            isAllCaps = false
-            setTextColor(Color.WHITE)
-            setBackgroundColor(green)
-        }
-        val summaryButton = Button(this).apply {
-            text = "ملخص الحضور لهذا الأسبوع"
-            isAllCaps = false
-        }
+val summaryButton = Button(this).apply {
+    text = "ملخص الحضور لهذا الأسبوع"
+    isAllCaps = false
+}
+
         root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
   val monthlyButton = Button(this).apply {
     text = "عرض كشف الحضور الشهري"
