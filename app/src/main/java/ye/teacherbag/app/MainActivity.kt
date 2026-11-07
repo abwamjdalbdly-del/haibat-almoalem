@@ -433,8 +433,7 @@ root.addView(
 horizontalScroll.addView(
     tableHost,
     ViewGroup.LayoutParams(-2, -2)
-)
-       verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2)) 
+       verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2)
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val saveButton = Button(this).apply {
