@@ -829,14 +829,14 @@ private fun showMonthlyAttendance() {
         isFillViewport = true
         addView(
             table,
-            HorizontalScrollView.LayoutParams(-2, -2)
+            ViewGroup.LayoutParams(-2, -2)
         )
     }
 
     val verticalScroll = ScrollView(this).apply {
         addView(
             horizontalScroll,
-            ScrollView.LayoutParams(-1, -2)
+            viewGroup.LayoutParams(-1, -2)
         )
     }
 
