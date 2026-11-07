@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Typeface
@@ -26,16 +25,13 @@ import android.widget.*
 import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.Calendar
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import kotlin.math.roundToInt
 
 class MainActivity : Activity() {
 
-    // ==================== ثوابت ====================
     private val green = Color.rgb(23, 107, 85)
     private val prefs by lazy { getSharedPreferences("teacher_bag_local", Context.MODE_PRIVATE) }
     private lateinit var root: LinearLayout
@@ -54,7 +50,6 @@ class MainActivity : Activity() {
     }
     private data class StudentResult(val name: String, val total: Double, val average20: Double, val enteredSubjects: Int, val subjectCount: Int)
 
-    // ==================== دورة الحياة ====================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showHome()
@@ -96,7 +91,6 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("تنبيه").setMessage(message).setPositiveButton("حسنًا", null).show()
     }
 
-    // ==================== الشاشة الرئيسية ====================
     private fun showHome() {
         setup("حقيبة المعلم الشاملة")
         root.addView(TextView(this).apply {
@@ -113,7 +107,6 @@ class MainActivity : Activity() {
         })
     }
 
-    // ==================== قاعدة البيانات ====================
     private fun studentNames(): MutableSet<String> {
         val saved = prefs.getString("students_list_v2", null)
         val old = prefs.getStringSet("students", emptySet())?.toSet() ?: emptySet()
@@ -126,7 +119,6 @@ class MainActivity : Activity() {
             .putStringSet("students", clean.toSet()).apply()
     }
 
-    /** قراءة الصفوف فقط — لا تكتب. */
     private fun readClassNames(): MutableList<String> {
         val saved = prefs.getString("class_names_v1", "") ?: ""
         val names = mutableListOf<String>()
@@ -140,7 +132,6 @@ class MainActivity : Activity() {
         return names
     }
 
-    /** كتابة صريحة للصفوف — تُستدعى فقط عند التعديل. */
     private fun writeClassNames(names: List<String>) {
         val clean = names.map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
         prefs.edit().putString("class_names_v1", clean.joinToString("\n")).commit()
@@ -164,7 +155,6 @@ class MainActivity : Activity() {
             .commit()
     }
 
-    // ==================== شاشة الطلاب ====================
     private fun showStudents() {
         setup("قاعدة بيانات الطلاب")
         val input = EditText(this).apply { hint = "اكتب اسم الطالب"; textSize = 18f }
@@ -195,7 +185,6 @@ class MainActivity : Activity() {
         addButton("العودة للرئيسية") { showHome() }
     }
 
-    // ==================== استيراد Excel ====================
     private fun chooseExcelFile() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -323,7 +312,9 @@ class MainActivity : Activity() {
             }.setNegativeButton("إلغاء", null).show()
     }
 
-    // ==================== شاشة الحضور الأسبوعي ====================
+    private fun attendanceKey(cls: String, month: String, week: String) =
+        "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
+
     private fun showAttendance() {
         setup("الحضور والغياب")
         val classes = readClassNames()
@@ -437,7 +428,6 @@ class MainActivity : Activity() {
             val rowHeight = dp(35)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
-            // ترتيب الأعمدة من اليمين لليسار: اسم الطالب أولاً ثم الأيام.
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
             days.reversed().forEach { title ->
                 val cell = FrameLayout(this).apply {
@@ -617,11 +607,6 @@ class MainActivity : Activity() {
         addButton("العودة للرئيسية") { showHome() }
     }
 
-    /** مفتاح موحد لسجلات الحضور على مستوى الصنف. */
-    private fun attendanceKey(cls: String, month: String, week: String) =
-        "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
-
-    // ==================== الحضور الشهري ====================
     private fun showMonthlyAttendance() {
         setup("كشف الحضور الشهري")
         val months = listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")
@@ -767,7 +752,6 @@ class MainActivity : Activity() {
         addButton("العودة للرئيسية") { showHome() }
     }
 
-    // ==================== النتائج ====================
     private fun subjectsKey(className: String) = "result_subjects_v2_" + Uri.encode(className)
     private fun resultGradeKey(className: String, term: String, student: String, subject: String, part: String) =
         "result_marks_v2_${Uri.encode(className)}_${Uri.encode(term)}_${Uri.encode(student)}_${Uri.encode(subject)}_$part"
@@ -819,7 +803,6 @@ class MainActivity : Activity() {
             if (term.isEmpty()) toast("اكتب اسم الفصل الدراسي أولاً")
             else enterStudentGrades(
                 classSpinner.selectedItem?.toString() ?: classes.first(),
-                // لا مسافات حول | لتجنّب تفاوت المفاتيح.
                 "$term|${monthSpinner.selectedItem}"
             )
         }
@@ -921,7 +904,6 @@ class MainActivity : Activity() {
             }.setNegativeButton("إلغاء", null).show()
     }
 
-    // ==================== إدخال الدرجات ====================
     private fun showMonthlySubjectEntry(className: String, term: String, subject: SubjectInfo, students: List<String>) {
         setup("إدخال درجات الطلاب")
         root.addView(TextView(this).apply {
@@ -956,7 +938,6 @@ class MainActivity : Activity() {
         }
 
         val headerHeight = dp(100)
-
         val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
 
         fun addVerticalHeader(row: TableRow, label: String, width: Int) {
@@ -986,8 +967,6 @@ class MainActivity : Activity() {
             row.addView(view, TableRow.LayoutParams(dp(width), headerHeight))
         }
 
-        // ترتيب الأعمدة من اليمين إلى اليسار: رقم، اسم، نوع، ثم الدرجات.
-        // نضيفها بترتيب معكوس داخل TableRow LTR لتظهر صحيحة.
         addNormalHeader(header, "م", 42)
         addNormalHeader(header, "اسم الطالب", 100)
         listOf("النوع", "الواجبات 20", "المواظبة 20", "الشفهي 20", "التحريري 40", "المجموع 100", "المتوسط 20")
@@ -1144,7 +1123,6 @@ class MainActivity : Activity() {
             .setPositiveButton("حسنًا", null).show()
     }
 
-    // ==================== Excel Export ====================
     private fun xmlSafe(value: String): String =
         value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             .replace("\"", "&quot;").replace("'", "&apos;")
@@ -1217,7 +1195,6 @@ class MainActivity : Activity() {
         return output.toByteArray()
     }
 
-    // ==================== Excel Import ====================
     private fun columnNumber(letters: String): Int {
         var value = 0
         for (c in letters) value = value * 26 + (c - 'A' + 1)
@@ -1282,7 +1259,6 @@ class MainActivity : Activity() {
         while (e != XmlPullParser.END_DOCUMENT) {
             if (e == XmlPullParser.START_TAG && p.name == "sheet") {
                 val n = p.getAttributeValue(null, "name")
-                // قراءة r:id عبر namespace صريح فقط — لا fallback قد يطابق sheetId.
                 val id = p.getAttributeValue(relNs, "id")
                 if (n != null && id != null) r.add(n to id)
             }
@@ -1347,4 +1323,172 @@ class MainActivity : Activity() {
                 }
                 XmlPullParser.TEXT, XmlPullParser.CDSECT -> if (target && (inValue || inline)) value.append(p.text)
                 XmlPullParser.END_TAG -> when (p.name) {
-                    "
+                    "v" -> inValue = false
+                    "t" -> inline = false
+                    "c" -> {
+                        if (target) {
+                            val raw = value.toString().trim()
+                            val text = if (type == "s") raw.toIntOrNull()?.let { book.sharedStrings.getOrNull(it) } ?: ""
+                            else raw
+                            if (text.isNotBlank()) result[row] = text.trim()
+                        }
+                        target = false; inValue = false; inline = false
+                    }
+                }
+            }
+            e = p.next()
+        }
+        return (firstRow..lastRow).mapNotNull { result[it] }
+    }
+
+    private fun drawArabicCentered(
+        canvas: Canvas,
+        text: String,
+        left: Float,
+        top: Float,
+        width: Int,
+        height: Int,
+        paint: TextPaint
+    ) {
+        val content = text.ifBlank { " " }
+        val layout = StaticLayout.Builder
+            .obtain(content, 0, content.length, paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setTextDirection(TextDirectionHeuristics.RTL)
+            .setIncludePad(false)
+            .build()
+        canvas.save()
+        canvas.translate(left, top + (height - layout.height) / 2f)
+        layout.draw(canvas)
+        canvas.restore()
+    }
+
+    private fun createAttendancePdf(
+        className: String,
+        month: String,
+        week: String,
+        names: List<String>,
+        values: Map<String, List<String>>
+    ): ByteArray {
+        val document = PdfDocument()
+        val output = ByteArrayOutputStream()
+
+        val pageWidth = 842
+        val pageHeight = 595
+        val margin = 24
+        val rowsPerPage = 25
+
+        val numberWidth = 30f
+        val nameWidth = 205f
+        val dayWidth = 90f
+        val headerHeight = 30f
+        val rowHeight = 17f
+
+        val borderPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.DKGRAY
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = 0.7f
+        }
+        val fillPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(20, 100, 200)
+            style = android.graphics.Paint.Style.FILL
+        }
+        val whitePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = android.graphics.Paint.Style.FILL
+        }
+        val textPaint = TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 10f
+            typeface = Typeface.DEFAULT
+        }
+        val titlePaint = TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 19f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val headerPaint = TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 10f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        val totalPages = maxOf(1, (names.size + rowsPerPage - 1) / rowsPerPage)
+
+        for (pageIndex in 0 until totalPages) {
+            val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageIndex + 1).create()
+            val page = document.startPage(pageInfo)
+            val canvas = page.canvas
+
+            drawArabicCentered(canvas, "كشف الحضور والغياب", 0f, 10f, pageWidth, 34, titlePaint)
+            drawArabicCentered(
+                canvas,
+                "الصف: $className    الشهر: $month    $week",
+                40f, 46f, pageWidth - 80, 24, headerPaint
+            )
+
+            val tableTop = 82f
+            val rightEdge = pageWidth - margin.toFloat()
+
+            var x = rightEdge - nameWidth
+
+            fun drawCell(text: String, left: Float, top: Float, width: Float, height: Float, header: Boolean = false) {
+                canvas.drawRect(left, top, left + width, top + height, if (header) fillPaint else whitePaint)
+                canvas.drawRect(left, top, left + width, top + height, borderPaint)
+                drawArabicCentered(
+                    canvas, text, left + 2f, top + 1f,
+                    (width - 4f).toInt(), (height - 2f).toInt(),
+                    if (header) headerPaint else textPaint
+                )
+            }
+
+            drawCell("اسم الطالب", x, tableTop, nameWidth, headerHeight, true)
+            x -= numberWidth
+            drawCell("م", x, tableTop, numberWidth, headerHeight, true)
+
+            val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
+            days.forEach { day ->
+                x -= dayWidth
+                drawCell(day, x, tableTop, dayWidth, headerHeight, true)
+            }
+
+            val start = pageIndex * rowsPerPage
+            val end = minOf(start + rowsPerPage, names.size)
+
+            for (index in start until end) {
+                val name = names[index]
+                val rowTop = tableTop + headerHeight + (index - start) * rowHeight
+                var cellX = rightEdge - nameWidth
+                drawCell(name, cellX, rowTop, nameWidth, rowHeight)
+                cellX -= numberWidth
+                drawCell((index + 1).toString(), cellX, rowTop, numberWidth, rowHeight)
+                val studentValues = values[name] ?: emptyList()
+                days.indices.forEach { day ->
+                    cellX -= dayWidth
+                    val mark = when (studentValues.getOrNull(day) ?: "") {
+                        "✓" -> "حاضر"; "غ" -> "غائب"; "م" -> "بعذر"; else -> ""
+                    }
+                    drawCell(mark, cellX, rowTop, dayWidth, rowHeight)
+                }
+            }
+
+            val footerY = pageHeight - 40f
+            drawArabicCentered(
+                canvas,
+                "توقيع المعلم: ............................       توقيع الإدارة: ............................",
+                40f, footerY, pageWidth - 80, 16, textPaint
+            )
+            drawArabicCentered(
+                canvas,
+                "صفحة ${pageIndex + 1} من $totalPages",
+                10f, pageHeight - 18f, pageWidth - 20, 14, textPaint
+            )
+
+            document.finishPage(page)
+        }
+
+        document.writeTo(output)
+        document.close()
+        return output.toByteArray()
+    }
+}
