@@ -423,9 +423,10 @@ root.addView(
         val horizontalScroll = HorizontalScrollView(this).apply {
             isFillViewport = false
             isHorizontalScrollBarEnabled = true
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-        }
-        val tableHost = LinearLayout(this).apply {
+layoutDirection = View.LAYOUT_DIRECTION_LTR
+}
+
+val tableHost = LinearLayout(this).apply {
     orientation = LinearLayout.VERTICAL
     layoutDirection = View.LAYOUT_DIRECTION_LTR
 }
@@ -433,8 +434,20 @@ root.addView(
 horizontalScroll.addView(
     tableHost,
     ViewGroup.LayoutParams(-2, -2)
-       verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2)
-        root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
+)
+
+verticalScroll.addView(
+    horizontalScroll,
+    ViewGroup.LayoutParams(-1, -2)
+)
+
+root.addView(
+    verticalScroll,
+    LinearLayout.LayoutParams(-1, 0, 1f)
+)
+
+val saveButton = Button(this).apply {
+    text = "حفظ سجل الأسبوع"
 
         val saveButton = Button(this).apply {
             text = "حفظ سجل الأسبوع"
