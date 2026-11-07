@@ -559,7 +559,7 @@ root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
             val nameWidth = dp(150)
             val dayWidth = dp(35)
             
-            val headerHeight = dp(85)
+            val headerHeight = dp(75)
             val rowHeight = dp(35)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
@@ -1009,12 +1009,23 @@ private fun showMonthlyAttendance() {
 
         // خلاصة عامة
         val totalRow = TableRow(this)
-        val totalPresent = weeklyData.values
-            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "✓" } } }
-        val totalAbsent = weeklyData.values
-            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "غ" } } }
-        val totalExcused = weeklyData.values
-            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "م" } } }
+        val totalPresent = weeklyData.sumOf { week ->
+    week.values.sumOf { marks ->
+        marks.count { mark -> mark == "✓" }
+    }
+}
+
+val totalAbsent = weeklyData.sumOf { week ->
+    week.values.sumOf { marks ->
+        marks.count { mark -> mark == "غ" }
+    }
+}
+
+val totalExcused = weeklyData.sumOf { week ->
+    week.values.sumOf { marks ->
+        marks.count { mark -> mark == "م" }
+    }
+}
 
         totalRow.addView(
             cell("الإجمالي", 145, Color.rgb(220, 230, 225))
