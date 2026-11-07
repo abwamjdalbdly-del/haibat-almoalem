@@ -448,7 +448,23 @@ horizontalScroll.addView(
             isAllCaps = false
         }
         root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
-        root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
+  val monthlyButton = Button(this).apply {
+    text = "عرض كشف الحضور الشهري"
+    isAllCaps = false
+    textSize = 17f
+    setTextColor(Color.WHITE)
+    setBackgroundColor(Color.rgb(40, 130, 100))
+}
+
+root.addView(
+    monthlyButton,
+    LinearLayout.LayoutParams(-1, -2).apply {
+        topMargin = dp(5)
+    }
+)  
+ monthlyButton.setOnClickListener {
+    showMonthlyAttendance()
+}   root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
         val exportButton = Button(this).apply {
             text = "تصدير كشف الحضور إلى Excel"
             isAllCaps = false
@@ -752,7 +768,301 @@ table.addView(TableRow(this).apply {
         render()
         addButton("العودة للرئيسية") { showHome() }
     }
+private fun showMonthlyAttendance() {
+    setup("كشف الحضور الشهري")
 
+    val months = listOf(
+        "الشهر جماداول",
+        "الشهر جمادثاني",
+        "الشهر رجب"
+    )
+
+    val classes = classNames().ifEmpty { listOf("لا توجد صفوف") }
+
+    val topLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(8), dp(8), dp(8), dp(8))
+    }
+
+    val classSpinner = Spinner(this)
+    classSpinner.adapter = ArrayAdapter(
+        this,
+        android.R.layout.simple_spinner_dropdown_item,
+        classes
+    )
+
+    val monthSpinner = Spinner(this)
+    monthSpinner.adapter = ArrayAdapter(
+        this,
+        android.R.layout.simple_spinner_dropdown_item,
+        months
+    )
+
+    topLayout.addView(classSpinner)
+    topLayout.addView(monthSpinner)
+
+    root.addView(
+        topLayout,
+        LinearLayout.LayoutParams(-1, -2)
+    )
+
+    val table = TableLayout(this).apply {
+        isStretchAllColumns = false
+        setPadding(dp(4), dp(4), dp(4), dp(4))
+    }
+
+    val horizontalScroll = HorizontalScrollView(this).apply {
+        isFillViewport = true
+        addView(
+            table,
+            HorizontalScrollView.LayoutParams(-2, -2)
+        )
+    }
+
+    val verticalScroll = ScrollView(this).apply {
+        addView(
+            horizontalScroll,
+            ScrollView.LayoutParams(-1, -2)
+        )
+    }
+
+    root.addView(
+        verticalScroll,
+        LinearLayout.LayoutParams(
+            -1,
+            0,
+            1f
+        )
+    )
+
+    fun cell(
+        value: String,
+        width: Int,
+        background: Int = Color.WHITE,
+        textColor: Int = Color.BLACK
+    ): TextView {
+        return TextView(this).apply {
+            text = value
+            textSize = 11f
+            gravity = Gravity.CENTER
+            setTextColor(textColor)
+            setBackgroundColor(background)
+            setPadding(dp(2), dp(7), dp(2), dp(7))
+            layoutParams = TableRow.LayoutParams(
+                dp(width),
+                -2
+            ).apply {
+                setMargins(dp(1), dp(1), dp(1), dp(1))
+            }
+        }
+    }
+
+    fun renderMonthly() {
+        table.removeAllViews()
+
+        val cls = classSpinner.selectedItem?.toString() ?: return
+        val month = monthSpinner.selectedItem?.toString() ?: return
+
+        if (cls == "لا توجد صفوف") {
+            table.addView(
+                TableRow(this).apply {
+                    addView(cell("لا توجد صفوف مسجلة", 220))
+                }
+            )
+            return
+        }
+
+        val weeklyData = Array(5) {
+            linkedMapOf<String, List<String>>()
+        }
+
+        val allNames = linkedSetOf<String>()
+
+        for (weekNo in 1..5) {
+            val weekLabel = "الأسبوع: $weekNo"
+            val storageKey =
+                "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(weekLabel)}"
+
+            val savedText = prefs.getString(storageKey, "") ?: ""
+
+            savedText.lines().forEach { line ->
+                val parts = line.split("|", limit = 2)
+
+                if (parts.size == 2) {
+                    val studentName = parts[0].trim()
+
+                    if (studentName.isNotEmpty()) {
+                        val marks = parts[1]
+                            .split(",")
+                            .take(6)
+                            .toMutableList()
+
+                        while (marks.size < 6) {
+                            marks.add("")
+                        }
+
+                        weeklyData[weekNo - 1][studentName] = marks
+                        allNames.add(studentName)
+                    }
+                }
+            }
+        }
+
+        if (allNames.isEmpty()) {
+            table.addView(
+                TableRow(this).apply {
+                    addView(
+                        cell(
+                            "لا توجد سجلات محفوظة لهذا الشهر",
+                            260,
+                            Color.WHITE
+                        )
+                    )
+                }
+            )
+            return
+        }
+
+        // رأس الجدول
+        val header = TableRow(this)
+
+        header.addView(
+            cell("اسم الطالب", 145, Color.rgb(23, 107, 85), Color.WHITE)
+        )
+
+        for (day in 1..30) {
+            val weekNo = ((day - 1) / 6) + 1
+            val dayNames = listOf(
+                "سبت", "أحد", "اثن",
+                "ثلا", "أربع", "خميس"
+            )
+            val dayName = dayNames[(day - 1) % 6]
+
+            header.addView(
+                cell(
+                    "$day\n$dayName",
+                    48,
+                    Color.rgb(23, 107, 85),
+                    Color.WHITE
+                )
+            )
+        }
+
+        header.addView(
+            cell("حاضر", 55, Color.rgb(40, 130, 100), Color.WHITE)
+        )
+        header.addView(
+            cell("غائب", 55, Color.rgb(180, 70, 70), Color.WHITE)
+        )
+        header.addView(
+            cell("بعذر", 55, Color.rgb(70, 110, 170), Color.WHITE)
+        )
+
+        table.addView(header)
+
+        // بيانات الطلاب
+        allNames.forEachIndexed { index, studentName ->
+            val row = TableRow(this)
+            val background = if (index % 2 == 0) {
+                Color.rgb(245, 248, 246)
+            } else {
+                Color.WHITE
+            }
+
+            row.addView(
+                cell(studentName, 145, Color.rgb(230, 238, 234))
+            )
+
+            val allMarks = mutableListOf<String>()
+
+            for (weekIndex in 0 until 5) {
+                val marks = weeklyData[weekIndex][studentName]
+                    ?: List(6) { "" }
+
+                for (mark in marks.take(6)) {
+                    allMarks.add(mark)
+                    val markColor = when (mark) {
+                        "✓" -> Color.rgb(40, 130, 80)
+                        "غ" -> Color.rgb(190, 60, 60)
+                        "م" -> Color.rgb(50, 100, 180)
+                        else -> Color.BLACK
+                    }
+
+                    row.addView(
+                        cell(mark, 48, background, markColor)
+                    )
+                }
+            }
+
+            val present = allMarks.count { it == "✓" }
+            val absent = allMarks.count { it == "غ" }
+            val excused = allMarks.count { it == "م" }
+
+            row.addView(cell(present.toString(), 55, background))
+            row.addView(cell(absent.toString(), 55, background))
+            row.addView(cell(excused.toString(), 55, background))
+
+            table.addView(row)
+        }
+
+        // خلاصة عامة
+        val totalRow = TableRow(this)
+        val totalPresent = weeklyData.values
+            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "✓" } } }
+        val totalAbsent = weeklyData.values
+            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "غ" } } }
+        val totalExcused = weeklyData.values
+            .sumOf { week -> week.values.sumOf { marks -> marks.count { it == "م" } } }
+
+        totalRow.addView(
+            cell("الإجمالي", 145, Color.rgb(220, 230, 225))
+        )
+
+        repeat(30) {
+            totalRow.addView(
+                cell("", 48, Color.rgb(220, 230, 225))
+            )
+        }
+
+        totalRow.addView(
+            cell(totalPresent.toString(), 55, Color.rgb(220, 230, 225))
+        )
+        totalRow.addView(
+            cell(totalAbsent.toString(), 55, Color.rgb(220, 230, 225))
+        )
+        totalRow.addView(
+            cell(totalExcused.toString(), 55, Color.rgb(220, 230, 225))
+        )
+
+        table.addView(totalRow)
+    }
+
+    val listener = object : AdapterView.OnItemSelectedListener {
+        override fun onItemSelected(
+            parent: AdapterView<*>?,
+            view: View?,
+            position: Int,
+            id: Long
+        ) {
+            renderMonthly()
+        }
+
+        override fun onNothingSelected(parent: AdapterView<*>?) {}
+    }
+
+    classSpinner.onItemSelectedListener = listener
+    monthSpinner.onItemSelectedListener = listener
+
+    renderMonthly()
+
+    addButton("العودة للحضور الأسبوعي") {
+        showAttendance()
+    }
+
+    addButton("العودة للرئيسية") {
+        showHome()
+    }
+}
     private data class SubjectInfo(val name: String)
     private data class SubjectMarks(val homework: Double, val attendance: Double, val oral: Double, val written: Double) {
         val total: Double get() = homework + attendance + oral + written
