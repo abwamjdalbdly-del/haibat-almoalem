@@ -1537,4 +1537,3 @@ class MainActivity : Activity() {
         return output.toByteArray()
     }
 }
-// قم بتأكيد أن هذا القوس الأخير هو إغلاق الكلاس } وليس فتح {
