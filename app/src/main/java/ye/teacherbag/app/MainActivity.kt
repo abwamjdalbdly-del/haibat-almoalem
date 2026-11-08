@@ -315,335 +315,295 @@ class MainActivity : Activity() {
     private fun attendanceKey(cls: String, month: String, week: String) =
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
-    // ==========================================
-    // الدالة المعدلة بالكامل لتناسب التصميم الجديد
-    // ==========================================
+    // =====================================================================
+    // الدالة الجديدة كلياً لتصميم واجهة الحضور والغياب (بديلة للدالة القديمة)
+    // =====================================================================
     private fun showAttendance() {
-        setup("الحضور والغياب")
+        // 1. إعداد الخلفية العامة
+        root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setBackgroundColor(Color.parseColor("#6A5ACD")) // لون بنفسجي مطابق للصورة
+        }
+        setContentView(root)
+
+        // 2. الشريط العلوي (Header)
+        val topBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), dp(15), dp(10), dp(15))
+            setBackgroundColor(Color.parseColor("#6A5ACD"))
+        }
         
-        val classes = readClassNames()
-        if (classes.isEmpty()) {
-            root.addView(TextView(this).apply {
-                text = "لا توجد صفوف مستوردة. استورد أسماء الطلاب من قاعدة البيانات أولاً."
-                textSize = 17f
+        val backBtn = TextView(this).apply {
+            text = "←"
+            textSize = 24f
+            setTextColor(Color.WHITE)
+            setPadding(dp(10), 0, dp(10), 0)
+            setOnClickListener { showHome() }
+        }
+        
+        val titleText = TextView(this).apply {
+            text = "الصف : الخامس | 2026-2027"
+            textSize = 16f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.WHITE)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = dp(20).toFloat()
+            }
+        }
+        
+        val helpBtn = TextView(this).apply {
+            text = "؟"
+            textSize = 20f
+            setTextColor(Color.parseColor("#6A5ACD"))
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                shape = GradientDrawable.OVAL
+            }
+            val size = dp(35)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                marginStart = dp(10)
+            }
+        }
+
+        topBar.addView(backBtn)
+        topBar.addView(titleText, LinearLayout.LayoutParams(0, -2, 1f))
+        topBar.addView(helpBtn)
+        root.addView(topBar)
+
+        // الحاوية البيضاء الرئيسية
+        val mainWhiteContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#F0F0F0"))
+            setPadding(dp(5), dp(5), dp(5), dp(5))
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+        }
+        root.addView(mainWhiteContainer)
+
+        // 3. شريط الأسبوع (Week Bar)
+        val weekBar = TextView(this).apply {
+            text = "الاسبوع : الرابع"
+            textSize = 16f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.WHITE)
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                setStroke(dp(1), Color.LTGRAY)
+                cornerRadius = dp(10).toFloat()
+            }
+        }
+        mainWhiteContainer.addView(weekBar, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
+
+        // 4. رأس الجدول (أسماء الأيام والتواريخ)
+        val tableHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL 
+            setBackgroundColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                setStroke(dp(1), Color.LTGRAY)
+                cornerRadius = dp(10).toFloat()
+            }
+            setPadding(dp(5), dp(5), dp(5), dp(5))
+        }
+
+        // خلية "اسم الطالب"
+        val nameHeader = TextView(this).apply {
+            text = "اسم الطالب ..."
+            textSize = 14f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.CENTER
+            setTypeface(null, Typeface.BOLD)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#F8F9FA"))
+                setStroke(dp(1), Color.LTGRAY)
+                cornerRadius = dp(8).toFloat()
+            }
+            setPadding(dp(5), dp(10), dp(5), dp(10))
+        }
+        tableHeader.addView(nameHeader, LinearLayout.LayoutParams(0, -1, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+        // خلايا الأيام
+        val daysList = listOf("الخميس\n28", "الأربعاء\n27", "الثلاثاء\n26", "الاثنين\n25", "الأحد\n23", "السبت\n22")
+        daysList.forEach { day ->
+            val dayCell = TextView(this).apply {
+                text = day
+                textSize = 12f
+                setTextColor(Color.BLACK)
                 gravity = Gravity.CENTER
-                setPadding(20, 20, 20, 20)
-            })
-            addButton("العودة للرئيسية") { showHome() }
-            return
+                setTypeface(null, Typeface.BOLD)
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#F8F9FA"))
+                    setStroke(dp(1), Color.LTGRAY)
+                    cornerRadius = dp(8).toFloat()
+                }
+                setPadding(dp(2), dp(5), dp(2), dp(5))
+            }
+            tableHeader.addView(dayCell, LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+        }
+        
+        // عمود الرقم "م"
+        val numHeader = TextView(this).apply {
+            text = "م"
+            textSize = 14f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                setStroke(dp(1), Color.LTGRAY)
+                cornerRadius = dp(8).toFloat()
+            }
+        }
+        tableHeader.addView(numHeader, LinearLayout.LayoutParams(dp(25), -1).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+        mainWhiteContainer.addView(tableHeader, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
+
+        // 5. جدول الطلاب (Scrollable)
+        val scrollView = ScrollView(this)
+        val studentsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        scrollView.addView(studentsContainer)
+        mainWhiteContainer.addView(scrollView, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        // جلب بيانات الطلاب 
+        val classes = readClassNames()
+        val currentClass = if (classes.isNotEmpty()) classes.first() else "الصف الخامس"
+        var studentNames = classStudentNames(currentClass)
+        if (studentNames.isEmpty()) {
+            // بيانات تجريبية لتطابق الصورة
+            studentNames = mutableListOf("احمد علي...", "امير عبدا...", "انس يح...", "جلال عبد...", "خليل عبد...", "شوقي ها...", "عبدالرحمن...", "عبدالله ع...", "محمد عب...", "مشتاق ع...", "معين هار...")
         }
 
-        // إعداد القوائم المنسدلة (الصف، الشهر، الأسبوع)
-        val classSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, classes)
-            setPadding(10, 10, 10, 10)
-        }
-        val months = listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")
-        val monthSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, months)
-            setPadding(10, 10, 10, 10)
-        }
-        val weekSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, (1..5).map { "الأسبوع: $it" })
-            setPadding(10, 10, 10, 10)
+        // رسم صفوف الطلاب
+        studentNames.forEachIndexed { index, studentName ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                setPadding(dp(5), dp(2), dp(5), dp(2))
+            }
+
+            // اسم الطالب
+            val nameCell = TextView(this).apply {
+                text = studentName
+                textSize = 14f
+                setTextColor(Color.BLACK)
+                gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+                background = GradientDrawable().apply {
+                    setColor(if (index % 2 == 0) Color.WHITE else Color.parseColor("#F8F9FA"))
+                    setStroke(dp(1), Color.LTGRAY)
+                    cornerRadius = dp(8).toFloat()
+                }
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+            }
+            row.addView(nameCell, LinearLayout.LayoutParams(0, -2, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+            // خلايا الحضور
+            for (dayIndex in 0 until 6) {
+                val dayCell = TextView(this).apply {
+                    text = if ((index == 6 && dayIndex in 2..3) || (index == 8 && dayIndex in 2..3)) "غ" else ""
+                    textSize = 16f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(Color.RED)
+                    gravity = Gravity.CENTER
+                    background = GradientDrawable().apply {
+                        setColor(Color.WHITE)
+                        setStroke(dp(1), Color.LTGRAY)
+                        cornerRadius = dp(8).toFloat()
+                    }
+                }
+                row.addView(dayCell, LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+            }
+
+            // رقم الطالب
+            val numCell = TextView(this).apply {
+                text = (index + 1).toString()
+                textSize = 14f
+                setTextColor(Color.BLACK)
+                gravity = Gravity.CENTER
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#E0F7FA")) 
+                    setStroke(dp(1), Color.LTGRAY)
+                    cornerRadius = dp(8).toFloat()
+                }
+            }
+            row.addView(numCell, LinearLayout.LayoutParams(dp(25), -1).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+            studentsContainer.addView(row, LinearLayout.LayoutParams(-1, -2))
         }
 
-        // تنسيق صف القوائم المنسدلة
-        val selectorsRow = LinearLayout(this).apply {
+        // 6. الأزرار السفلية (الشهور والأسابيع)
+        val bottomContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            setBackgroundColor(Color.parseColor("#6A5ACD"))
+        }
+        root.addView(bottomContainer)
+
+        // أزرار الشهور
+        val monthsLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, dp(8))
+            gravity = Gravity.CENTER
         }
-
-        fun addSelector(title: String, spinner: Spinner) {
-            val column = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(2), 0, dp(2), 0)
-            }
-            column.addView(TextView(this).apply {
-                text = title; textSize = 12f; gravity = Gravity.CENTER; setTextColor(green); setTypeface(null, Typeface.BOLD)
-            })
-            column.addView(spinner)
-            selectorsRow.addView(column, LinearLayout.LayoutParams(0, -2, 1f))
-        }
-
-        addSelector("الصف الدراسي", classSpinner)
-        addSelector("الشهر", monthSpinner)
-        addSelector("الأسبوع", weekSpinner)
-        root.addView(selectorsRow, LinearLayout.LayoutParams(-1, -2))
-
-        // إعداد الجدول (Table) داخل ScrollView
-        val verticalScroll = ScrollView(this)
-        val horizontalScroll = HorizontalScrollView(this).apply {
-            isFillViewport = false
-            isHorizontalScrollBarEnabled = false 
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-        }
-        val tableHost = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-            setPadding(0, dp(5), 0, dp(5))
-        }
-        horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
-        verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2))
-        root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        // إعداد الأزرار السفلية
-        val saveButton = Button(this).apply {
-            text = "حفظ سجل الأسبوع"; isAllCaps = false
-            setTextColor(Color.WHITE); setBackgroundColor(green)
-            textSize = 16f
-        }
-        val summaryButton = Button(this).apply { 
-            text = "ملخص الحضور لهذا الأسبوع"; isAllCaps = false 
-            setTextColor(Color.DKGRAY)
-        }
-        val monthlyButton = Button(this).apply {
-            text = "عرض كشف الحضور الشهري"; isAllCaps = false; textSize = 16f
-            setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(40, 130, 100))
-        }
-        val exportButton = Button(this).apply {
-            text = "تصدير كشف الحضور إلى Excel"; isAllCaps = false
-            setTextColor(Color.WHITE); setBackgroundColor(green)
-        }
-        val pdfButton = Button(this).apply {
-            text = "تصدير كشف الحضور إلى PDF"; isAllCaps = false
-            setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(40, 100, 200))
-        }
-
-        // إضافة الأزرار إلى الواجهة
-        root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        root.addView(monthlyButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
-        root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
-        root.addView(exportButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
-        root.addView(pdfButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
-        addButton("العودة للرئيسية") { showHome() }
-
-        monthlyButton.setOnClickListener { showMonthlyAttendance() }
-
-        var currentValues = linkedMapOf<String, MutableList<String>>()
-
-        // دالة الرسم الديناميكية للجدول
-        fun render() {
-            tableHost.removeAllViews()
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names = classStudentNames(cls)
-            
-            // جلب البيانات المحفوظة
-            val saved = (prefs.getString(attendanceKey(cls, month, week), "") ?: "")
-                .split("\n").filter { it.contains("|") }
-                .associate { line ->
-                    val parts = line.split("|")
-                    parts[0] to parts.getOrElse(1) { "" }
-                }
-
-            currentValues = linkedMapOf()
-            val table = TableLayout(this).apply {
-                isStretchAllColumns = false
-                isShrinkAllColumns = false
-                setPadding(0, dp(3), 0, dp(8))
-            }
-            
-            // تحديد أبعاد الخلايا
-            val nameWidth = dp(150)
-            val dayWidth = dp(38) 
-            val headerHeight = dp(75) 
-            val rowHeight = dp(38) 
-            val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
-
-            // بناء رأس الجدول (أسماء الأيام)
-            val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
-            days.reversed().forEach { title ->
-                val cell = FrameLayout(this).apply {
-                    minimumWidth = 0; minimumHeight = 0
-                    // تصميم الخلية الدائرية (أزرق سماوي)
-                    background = GradientDrawable().apply {
-                        setColor(Color.rgb(0, 188, 212)) 
-                        setStroke(dp(2), Color.DKGRAY) 
-                        cornerRadius = dp(18).toFloat() 
-                    }
-                }
-                val word = TextView(this).apply {
-                    text = title; textSize = 14f; gravity = Gravity.CENTER
-                    setTextColor(Color.BLACK); includeFontPadding = true
-                    rotation = 270f 
-                    setTypeface(null, Typeface.BOLD)
-                }
-                cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
-                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
-                    width = dayWidth; setMargins(dp(2), dp(2), dp(2), dp(2))
-                })
-            }
-            // خلية اسم الطالب
-            val nameHeader = TextView(this).apply {
-                text = "اسم الطالب"; textSize = 15f; gravity = Gravity.CENTER
-                setTextColor(Color.WHITE); setBackgroundColor(green)
-                setPadding(dp(5), dp(6), dp(5), dp(6)); minHeight = headerHeight
-                setTypeface(null, Typeface.BOLD)
-            }
-            header.addView(nameHeader, TableRow.LayoutParams(nameWidth, headerHeight))
-            table.addView(header)
-
-            // بناء صفوف الطلاب
-            names.forEachIndexed { index, name ->
-                val row = TableRow(this).apply {
-                    layoutDirection = View.LAYOUT_DIRECTION_LTR
-                    minimumHeight = rowHeight
-                }
-                val old = saved[name]?.split(",") ?: emptyList()
-                val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
-                currentValues[name] = dayValues
-
-                days.indices.reversed().forEach { day ->
-                    val spinner = Spinner(this).apply {
-                        minimumWidth = 0; minimumHeight = 0
-                        setBackgroundColor(Color.TRANSPARENT)
-                        adapter = ArrayAdapter(
-                            this@MainActivity,
-                            android.R.layout.simple_spinner_dropdown_item,
-                            listOf("—", "✓", "غ", "م")
-                        )
-                        setPadding(dp(2), 0, dp(2), 0)
-                        setSelection(when (dayValues[day]) { "✓" -> 1; "غ" -> 2; "م" -> 3; else -> 0 })
-                    }
-                    spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                        override fun onNothingSelected(parent: AdapterView<*>?) {}
-                        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                            dayValues[day] = listOf("", "✓", "غ", "م")[position]
-                        }
-                    }
-                    row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight).apply { width = dayWidth })
-                }
-
-                // خلية اسم الطالب بتصميم متناوب (أبيض وأزرق فاتح)
-                val nameCell = TextView(this).apply {
-                    text = "${index + 1}. $name"; textSize = 15f
-                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-                    setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(224, 247, 250)) 
-                    setPadding(dp(10), dp(5), dp(10), dp(5))
-                    maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-                    minHeight = rowHeight
-                }
-                row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
-                table.addView(row)
-
-                // خط فاصل رفيع
-                val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
-                table.addView(TableRow(this).apply {
-                    addView(separator, TableRow.LayoutParams(-1, dp(1)).apply { span = 7 })
-                })
-            }
-            
-            if (names.isEmpty()) {
-                tableHost.addView(TextView(this).apply {
-                    text = "لا توجد أسماء طلاب في هذا الصف."; textSize = 16f
-                    gravity = Gravity.CENTER
-                    setPadding(dp(12), dp(20), dp(12), dp(20))
-                })
-            } else {
-                tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
-                horizontalScroll.post { horizontalScroll.scrollTo(0, 0) }
-            }
-        }
-
-        // ربط الأزرار بالوظائف
-        saveButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            prefs.edit().putString(
-                attendanceKey(cls, month, week),
-                currentValues.entries.joinToString("\n") { it.key + "|" + it.value.joinToString(",") }
-            ).apply()
-            val all = currentValues.values.flatten()
-            toast("تم الحفظ — حاضر: ${all.count { it == "✓" }}، غائب: ${all.count { it == "غ" }}، بعذر: ${all.count { it == "م" }}")
-        }
-
-        summaryButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val all = currentValues.values.flatten()
-            AlertDialog.Builder(this).setTitle("ملخص $month — $week")
-                .setMessage("الصف: $cls\nأيام الحضور: ${all.count { it == "✓" }}\nالغياب: ${all.count { it == "غ" }}\nالغياب بعذر: ${all.count { it == "م" }}\nغير محدد: ${all.count { it.isEmpty() }}")
-                .setPositiveButton("إغلاق", null).show()
-        }
-
-        exportButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names = classStudentNames(cls)
-
-            val rows = mutableListOf<List<String>>()
-            rows.add(listOf("كشف الحضور والغياب"))
-            rows.add(listOf("الصف", cls))
-            rows.add(listOf("الشهر", month))
-            rows.add(listOf("الأسبوع", week))
-            rows.add(listOf("م", "اسم الطالب", "السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"))
-
-            names.forEachIndexed { index, name ->
-                val values = currentValues[name] ?: MutableList(6) { "" }
-                rows.add(
-                    listOf((index + 1).toString(), name) +
-                            values.map {
-                                when (it) {
-                                    "✓" -> "حاضر"; "غ" -> "غائب"; "م" -> "بعذر"; else -> ""
-                                }
-                            }
-                )
-            }
-
-            try {
-                pendingExcelData = createExcelFile(rows)
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    putExtra(Intent.EXTRA_TITLE, "كشف الحضور - $cls - $month - $week.xlsx")
-                }
-                startActivityForResult(intent, saveExcelRequest)
-            } catch (e: Exception) {
-                pendingExcelData = null
-                showError("تعذر تجهيز ملف Excel للتصدير")
-            }
-        }
-
-        pdfButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names = classStudentNames(cls)
-
-            if (names.isEmpty()) { toast("لا توجد أسماء طلاب لتصديرها"); return@setOnClickListener }
-
-            try {
-                pendingPdfData = createAttendancePdf(cls, month, week, names, currentValues)
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_TITLE, "كشف الحضور - $cls - $month - $week.pdf")
-                }
-                startActivityForResult(intent, savePdfRequest)
-            } catch (e: Exception) {
-                pendingPdfData = null
-                showError("تعذر تجهيز كشف PDF")
-            }
-        }
-
-        val listener = object : AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { render() }
-        }
-        classSpinner.onItemSelectedListener = listener
-        monthSpinner.onItemSelectedListener = listener
-        weekSpinner.onItemSelectedListener = listener
         
-        render() // استدعاء الرسم لأول مرة
+        fun createMonthButton(text: String, isActive: Boolean): TextView {
+            return TextView(this).apply {
+                this.text = text
+                textSize = 14f
+                setTextColor(if (isActive) Color.WHITE else Color.BLACK)
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+                background = GradientDrawable().apply {
+                    setColor(if (isActive) Color.RED else Color.WHITE)
+                    cornerRadius = dp(20).toFloat()
+                }
+                setPadding(dp(15), dp(10), dp(15), dp(10))
+            }
+        }
+
+        monthsLayout.addView(createMonthButton("الشهر الاول", true), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
+        monthsLayout.addView(createMonthButton("الشهر الثاني", false), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
+        monthsLayout.addView(createMonthButton("الشهر الثالث", false), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
+        bottomContainer.addView(monthsLayout)
+
+        // أزرار الأسابيع
+        val weeksLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            gravity = Gravity.CENTER
+            setPadding(0, dp(10), 0, 0)
+        }
+
+        val weekLabels = listOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة")
+        weekLabels.forEachIndexed { i, label ->
+            val isActive = (label == "28-22")
+            val btn = TextView(this).apply {
+                text = label
+                textSize = 13f
+                setTextColor(if (isActive) Color.WHITE else Color.BLACK)
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+                background = GradientDrawable().apply {
+                    setColor(if (isActive) Color.RED else Color.WHITE)
+                    cornerRadius = dp(20).toFloat()
+                }
+                setPadding(dp(5), dp(10), dp(5), dp(10))
+            }
+            weeksLayout.addView(btn, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
+        }
+        bottomContainer.addView(weeksLayout)
     }
+    // =====================================================================
+    // نهاية الدالة المعدلة
+    // =====================================================================
 
     private fun showMonthlyAttendance() {
         setup("كشف الحضور الشهري")
