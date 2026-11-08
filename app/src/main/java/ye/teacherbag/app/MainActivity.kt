@@ -316,7 +316,7 @@ class MainActivity : Activity() {
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
     // =====================================================================
-    // الدالة المعدلة (تصحيح اتجاه الجدول والأيام)
+    // الدالة المعدلة (تم إصلاح خطأ البناء وضمان الترتيب الصحيح)
     // =====================================================================
     private fun showAttendance() {
         var currentMonth = "الشهر الاول"
@@ -326,6 +326,7 @@ class MainActivity : Activity() {
         val classes = readClassNames()
         if (classes.isNotEmpty()) currentClass = classes.first()
 
+        // إعداد الجذر
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
@@ -406,7 +407,7 @@ class MainActivity : Activity() {
         // 4. رأس الجدول
         val tableHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL // التخطيط من اليمين لليسار
+            layoutDirection = View.LAYOUT_DIRECTION_RTL 
             setBackgroundColor(Color.WHITE)
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
@@ -418,12 +419,6 @@ class MainActivity : Activity() {
 
         val headerHeight = dp(85)
         val daysTextList = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
-        
-        // **الخدعة لحل مشكلة الاتجاه:**
-        // في RTL، العنصر الأول يظهر على اليمين. لكن في بعض الأحيان يتعامل مع الـ Weight بشكل معكوس.
-        // لضمان ظهور (م) في اليمين، نضيفه أولاً. ثم نضيف الأيام بترتيب معكوس، ثم الاسم.
-        // لكن الطريقة الأضمن هي إضافة (م)، ثم (الاسم)، ثم الأيام بالترتيب الصحيح،
-        // ولكن لضمان الترتيب، سنستخدم LayoutParams بوزن (Weight) ونعتمد على RTL.
         
         // (أ) خلية "م" (يمين)
         val numHeader = TextView(this).apply {
@@ -454,8 +449,7 @@ class MainActivity : Activity() {
         }
         tableHeader.addView(nameHeader, LinearLayout.LayoutParams(0, headerHeight, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-        // (ج) خلايا الأيام (نضيفها بالترتيب الصحيح: السبت ثم الأحد...)
-        // بما أن الـ LayoutDirection هو RTL، أول عنصر نضيفه سيظهر على يمين الاسم (أي بجانبه مباشرة)
+        // (ج) خلايا الأيام
         daysTextList.forEach { day ->
             val dayCell = FrameLayout(this).apply {
                 background = GradientDrawable().apply {
@@ -466,13 +460,12 @@ class MainActivity : Activity() {
             }
             val dayText = TextView(this).apply {
                 text = day
-                textSize = 13f // تم تصغير الخط قليلاً ليتناسب مع الارتفاع
+                textSize = 13f 
                 setTextColor(Color.BLACK)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
                 rotation = 270f 
             }
-            // تثبيت أبعاد النص ليتوسط الخلية العمودية
             dayCell.addView(dayText, FrameLayout.LayoutParams(dp(60), dp(50), Gravity.CENTER))
             tableHeader.addView(dayCell, LinearLayout.LayoutParams(0, headerHeight, 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
         }
@@ -654,7 +647,7 @@ class MainActivity : Activity() {
 
         // تهيئة الأزرار
         monthsButtons[0].performClick()
-        weeksButtons[4].performClick() // الأسبوع 21-28
+        weeksButtons[4].performClick() 
     }
 
     private fun saveAttendanceForStudent(cls: String, month: String, week: String, student: String, marks: List<String>) {
