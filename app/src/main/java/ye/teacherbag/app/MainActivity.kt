@@ -944,8 +944,8 @@ class MainActivity : Activity() {
                         val oldPart = "_${Uri.encode(existing.name)}_"
                         val editor = prefs.edit()
                         prefs.all.keys.filter { it.startsWith(oldPrefix) && it.contains(oldPart) }.forEach { oldKey ->
-                            // تم إصلاح الخطأ هنا: تحويل النص إلى String صريح
-                            val newKey = oldKey.replace(oldPart, "_" + Uri.encode(newName) + "_")
+                            // تم إصلاح الخطأ هنا: تحويل النص إلى String صريح لضمان عمل البناء
+                            val newKey = oldKey.replace(oldPart, "_" + Uri.encode(newName).toString() + "_")
                             prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
                             editor.remove(oldKey)
                         }
