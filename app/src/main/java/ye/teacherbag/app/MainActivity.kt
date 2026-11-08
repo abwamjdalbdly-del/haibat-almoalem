@@ -1537,5 +1537,5 @@ class MainActivity : Activity() {
         document.close()
         return output.toByteArray()
     }
-}
+{
 // هذا القوس الأخير يجب أن يكون إغلاقاً } وليس فتحاً {
