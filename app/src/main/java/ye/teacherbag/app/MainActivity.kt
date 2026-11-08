@@ -315,9 +315,6 @@ class MainActivity : Activity() {
     private fun attendanceKey(cls: String, month: String, week: String) =
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
-    // =====================================================================
-    // الدالة المعدلة (تصحيح اتجاه الجدول والأيام)
-    // =====================================================================
     private fun showAttendance() {
         var currentMonth = "الشهر الاول"
         var currentWeek = "21-28"
@@ -333,7 +330,6 @@ class MainActivity : Activity() {
         }
         setContentView(root)
 
-        // 1. الشريط العلوي
         val topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -378,7 +374,6 @@ class MainActivity : Activity() {
         topBar.addView(helpBtn)
         root.addView(topBar)
 
-        // 2. الحاوية البيضاء الرئيسية
         val mainWhiteContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#F0F0F0"))
@@ -387,7 +382,6 @@ class MainActivity : Activity() {
         }
         root.addView(mainWhiteContainer)
 
-        // 3. شريط الأسبوع
         val weekBar = TextView(this).apply {
             text = "الاسبوع : $currentWeek"
             textSize = 16f
@@ -403,7 +397,6 @@ class MainActivity : Activity() {
         }
         mainWhiteContainer.addView(weekBar, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
 
-        // 4. رأس الجدول
         val tableHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL 
@@ -419,7 +412,6 @@ class MainActivity : Activity() {
         val headerHeight = dp(85)
         val daysTextList = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
         
-        // (أ) خلية "م" (يمين)
         val numHeader = TextView(this).apply {
             text = "م"
             textSize = 16f
@@ -433,7 +425,6 @@ class MainActivity : Activity() {
         }
         tableHeader.addView(numHeader, LinearLayout.LayoutParams(dp(40), headerHeight).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-        // (ب) خلية "اسم الطالب"
         val nameHeader = TextView(this).apply {
             text = "اسم\nالطالب\n..."
             textSize = 14f
@@ -448,7 +439,6 @@ class MainActivity : Activity() {
         }
         tableHeader.addView(nameHeader, LinearLayout.LayoutParams(0, headerHeight, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-        // (ج) خلايا الأيام
         daysTextList.forEach { day ->
             val dayCell = FrameLayout(this).apply {
                 background = GradientDrawable().apply {
@@ -471,7 +461,6 @@ class MainActivity : Activity() {
 
         mainWhiteContainer.addView(tableHeader, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
 
-        // 5. جدول الطلاب
         val scrollView = ScrollView(this)
         val studentsContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -479,7 +468,6 @@ class MainActivity : Activity() {
         scrollView.addView(studentsContainer)
         mainWhiteContainer.addView(scrollView, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        // 6. دالة التحديث
         fun updateTable() {
             studentsContainer.removeAllViews()
             weekBar.text = "الاسبوع : $currentWeek"
@@ -502,7 +490,6 @@ class MainActivity : Activity() {
                     setPadding(dp(5), dp(2), dp(5), dp(2))
                 }
 
-                // (أ) رقم الطالب
                 val numCell = TextView(this).apply {
                     text = (index + 1).toString()
                     textSize = 15f
@@ -516,7 +503,6 @@ class MainActivity : Activity() {
                 }
                 row.addView(numCell, LinearLayout.LayoutParams(dp(40), dp(40)).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-                // (ب) اسم الطالب
                 val nameCell = TextView(this).apply {
                     text = studentName
                     textSize = 14f
@@ -533,7 +519,6 @@ class MainActivity : Activity() {
                 }
                 row.addView(nameCell, LinearLayout.LayoutParams(0, dp(40), 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-                // (ج) خلايا الأيام
                 val studentMarks = savedRecords[studentName] ?: List(6) { "" }
                 for (dayIndex in 0 until 6) {
                     val mark = studentMarks.getOrElse(dayIndex) { "" }
@@ -570,7 +555,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // 7. الأزرار السفلية
         val bottomContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(10), dp(10), dp(10), dp(10))
@@ -644,7 +628,6 @@ class MainActivity : Activity() {
         }
         bottomContainer.addView(weeksLayout)
 
-        // تهيئة الأزرار
         monthsButtons[0].performClick()
         weeksButtons[4].performClick() 
     }
@@ -667,9 +650,6 @@ class MainActivity : Activity() {
         
         prefs.edit().putString(key, lines.joinToString("\n")).apply()
     }
-    // =====================================================================
-    // نهاية دالة الحضور المعدلة
-    // =====================================================================
 
     private fun showMonthlyAttendance() {
         setup("كشف الحضور الشهري")
@@ -944,7 +924,6 @@ class MainActivity : Activity() {
                         val newPart = "_${Uri.encode(newName)}_"
                         val editor = prefs.edit()
                         prefs.all.keys.filter { it.startsWith(oldPrefix) && it.contains(oldPart) }.forEach { oldKey ->
-                            // إصلاح جذري: استخدام split/joinToString بدلاً من replace لتجنب أي أخطاء في الأنواع
                             val keyParts = oldKey.split(oldPart)
                             val newKey = keyParts.joinToString(newPart)
                             prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
@@ -1558,3 +1537,4 @@ class MainActivity : Activity() {
         document.close()
         return output.toByteArray()
     }
+}
