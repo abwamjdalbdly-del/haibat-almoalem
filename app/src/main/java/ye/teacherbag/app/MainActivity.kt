@@ -1558,4 +1558,3 @@ class MainActivity : Activity() {
         document.close()
         return output.toByteArray()
     }
-{
