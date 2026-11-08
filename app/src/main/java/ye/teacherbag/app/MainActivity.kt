@@ -1,5 +1,4 @@
 
-```kotlin
 package ye.teacherbag.app
 
 import android.app.Activity
