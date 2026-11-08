@@ -315,33 +315,45 @@ class MainActivity : Activity() {
     private fun attendanceKey(cls: String, month: String, week: String) =
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
+    // ==========================================
+    // الدالة المعدلة بالكامل لتناسب التصميم الجديد
+    // ==========================================
     private fun showAttendance() {
         setup("الحضور والغياب")
+        
         val classes = readClassNames()
         if (classes.isEmpty()) {
             root.addView(TextView(this).apply {
                 text = "لا توجد صفوف مستوردة. استورد أسماء الطلاب من قاعدة البيانات أولاً."
                 textSize = 17f
+                gravity = Gravity.CENTER
+                setPadding(20, 20, 20, 20)
             })
             addButton("العودة للرئيسية") { showHome() }
             return
         }
 
+        // إعداد القوائم المنسدلة (الصف، الشهر، الأسبوع)
         val classSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, classes)
+            setPadding(10, 10, 10, 10)
         }
         val months = listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")
         val monthSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, months)
+            setPadding(10, 10, 10, 10)
         }
         val weekSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, (1..5).map { "الأسبوع: $it" })
+            setPadding(10, 10, 10, 10)
         }
 
+        // تنسيق صف القوائم المنسدلة
         val selectorsRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(8), 0, dp(8))
         }
 
         fun addSelector(title: String, spinner: Spinner) {
@@ -350,7 +362,7 @@ class MainActivity : Activity() {
                 setPadding(dp(2), 0, dp(2), 0)
             }
             column.addView(TextView(this).apply {
-                text = title; textSize = 13f; gravity = Gravity.CENTER; setTextColor(green)
+                text = title; textSize = 12f; gravity = Gravity.CENTER; setTextColor(green); setTypeface(null, Typeface.BOLD)
             })
             column.addView(spinner)
             selectorsRow.addView(column, LinearLayout.LayoutParams(0, -2, 1f))
@@ -361,27 +373,34 @@ class MainActivity : Activity() {
         addSelector("الأسبوع", weekSpinner)
         root.addView(selectorsRow, LinearLayout.LayoutParams(-1, -2))
 
+        // إعداد الجدول (Table) داخل ScrollView
         val verticalScroll = ScrollView(this)
         val horizontalScroll = HorizontalScrollView(this).apply {
             isFillViewport = false
-            isHorizontalScrollBarEnabled = true
+            isHorizontalScrollBarEnabled = false 
             layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
         val tableHost = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_LTR
+            setPadding(0, dp(5), 0, dp(5))
         }
         horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
         verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2))
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
+        // إعداد الأزرار السفلية
         val saveButton = Button(this).apply {
             text = "حفظ سجل الأسبوع"; isAllCaps = false
             setTextColor(Color.WHITE); setBackgroundColor(green)
+            textSize = 16f
         }
-        val summaryButton = Button(this).apply { text = "ملخص الحضور لهذا الأسبوع"; isAllCaps = false }
+        val summaryButton = Button(this).apply { 
+            text = "ملخص الحضور لهذا الأسبوع"; isAllCaps = false 
+            setTextColor(Color.DKGRAY)
+        }
         val monthlyButton = Button(this).apply {
-            text = "عرض كشف الحضور الشهري"; isAllCaps = false; textSize = 17f
+            text = "عرض كشف الحضور الشهري"; isAllCaps = false; textSize = 16f
             setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(40, 130, 100))
         }
         val exportButton = Button(this).apply {
@@ -393,22 +412,27 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(40, 100, 200))
         }
 
-        root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+        // إضافة الأزرار إلى الواجهة
+        root.addView(saveButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         root.addView(monthlyButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
         root.addView(summaryButton, LinearLayout.LayoutParams(-1, -2))
         root.addView(exportButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
         root.addView(pdfButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+        addButton("العودة للرئيسية") { showHome() }
 
         monthlyButton.setOnClickListener { showMonthlyAttendance() }
 
         var currentValues = linkedMapOf<String, MutableList<String>>()
 
+        // دالة الرسم الديناميكية للجدول
         fun render() {
             tableHost.removeAllViews()
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
             val month = monthSpinner.selectedItem?.toString() ?: months.first()
             val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
             val names = classStudentNames(cls)
+            
+            // جلب البيانات المحفوظة
             val saved = (prefs.getString(attendanceKey(cls, month, week), "") ?: "")
                 .split("\n").filter { it.contains("|") }
                 .associate { line ->
@@ -422,39 +446,48 @@ class MainActivity : Activity() {
                 isShrinkAllColumns = false
                 setPadding(0, dp(3), 0, dp(8))
             }
+            
+            // تحديد أبعاد الخلايا
             val nameWidth = dp(150)
-            val dayWidth = dp(35)
-            val headerHeight = dp(75)
-            val rowHeight = dp(35)
+            val dayWidth = dp(38) 
+            val headerHeight = dp(75) 
+            val rowHeight = dp(38) 
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
+            // بناء رأس الجدول (أسماء الأيام)
             val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
             days.reversed().forEach { title ->
                 val cell = FrameLayout(this).apply {
                     minimumWidth = 0; minimumHeight = 0
+                    // تصميم الخلية الدائرية (أزرق سماوي)
                     background = GradientDrawable().apply {
-                        setColor(Color.rgb(0, 188, 212))
-                        setStroke(dp(2), Color.DKGRAY)
-                        cornerRadius = dp(18).toFloat()
+                        setColor(Color.rgb(0, 188, 212)) 
+                        setStroke(dp(2), Color.DKGRAY) 
+                        cornerRadius = dp(18).toFloat() 
                     }
                 }
                 val word = TextView(this).apply {
-                    text = title; textSize = 16f; gravity = Gravity.CENTER
-                    setTextColor(Color.BLACK); includeFontPadding = true; rotation = 270f
+                    text = title; textSize = 14f; gravity = Gravity.CENTER
+                    setTextColor(Color.BLACK); includeFontPadding = true
+                    rotation = 270f 
+                    setTypeface(null, Typeface.BOLD)
                 }
                 cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
                 header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
                     width = dayWidth; setMargins(dp(2), dp(2), dp(2), dp(2))
                 })
             }
+            // خلية اسم الطالب
             val nameHeader = TextView(this).apply {
                 text = "اسم الطالب"; textSize = 15f; gravity = Gravity.CENTER
                 setTextColor(Color.WHITE); setBackgroundColor(green)
                 setPadding(dp(5), dp(6), dp(5), dp(6)); minHeight = headerHeight
+                setTypeface(null, Typeface.BOLD)
             }
             header.addView(nameHeader, TableRow.LayoutParams(nameWidth, headerHeight))
             table.addView(header)
 
+            // بناء صفوف الطلاب
             names.forEachIndexed { index, name ->
                 val row = TableRow(this).apply {
                     layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -485,26 +518,30 @@ class MainActivity : Activity() {
                     row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight).apply { width = dayWidth })
                 }
 
+                // خلية اسم الطالب بتصميم متناوب (أبيض وأزرق فاتح)
                 val nameCell = TextView(this).apply {
-                    text = "${index + 1}. $name"; textSize = 16f
+                    text = "${index + 1}. $name"; textSize = 15f
                     gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
                     setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(0, 188, 212))
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(224, 247, 250)) 
                     setPadding(dp(10), dp(5), dp(10), dp(5))
-                    maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+                    maxLines = 1; ellipsize = TextUtils.TruncateAt.END
                     minHeight = rowHeight
                 }
                 row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
                 table.addView(row)
 
+                // خط فاصل رفيع
                 val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
                 table.addView(TableRow(this).apply {
                     addView(separator, TableRow.LayoutParams(-1, dp(1)).apply { span = 7 })
                 })
             }
+            
             if (names.isEmpty()) {
                 tableHost.addView(TextView(this).apply {
                     text = "لا توجد أسماء طلاب في هذا الصف."; textSize = 16f
+                    gravity = Gravity.CENTER
                     setPadding(dp(12), dp(20), dp(12), dp(20))
                 })
             } else {
@@ -513,6 +550,7 @@ class MainActivity : Activity() {
             }
         }
 
+        // ربط الأزرار بالوظائف
         saveButton.setOnClickListener {
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
             val month = monthSpinner.selectedItem?.toString() ?: months.first()
@@ -603,8 +641,8 @@ class MainActivity : Activity() {
         classSpinner.onItemSelectedListener = listener
         monthSpinner.onItemSelectedListener = listener
         weekSpinner.onItemSelectedListener = listener
-        render()
-        addButton("العودة للرئيسية") { showHome() }
+        
+        render() // استدعاء الرسم لأول مرة
     }
 
     private fun showMonthlyAttendance() {
