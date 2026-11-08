@@ -924,6 +924,7 @@ class MainActivity : Activity() {
                         val newPart = "_${Uri.encode(newName)}_"
                         val editor = prefs.edit()
                         prefs.all.keys.filter { it.startsWith(oldPrefix) && it.contains(oldPart) }.forEach { oldKey ->
+                            // إصلاح جذري: استخدام split/joinToString بدلاً من replace لتجنب أي أخطاء في الأنواع
                             val keyParts = oldKey.split(oldPart)
                             val newKey = keyParts.joinToString(newPart)
                             prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
@@ -1538,4 +1539,4 @@ class MainActivity : Activity() {
         return output.toByteArray()
     }
 }
-// قم بتأكيد أن هذا القوس الأخير هو إغلاق الكلاس } وليس فتح {
+// هذا القوس الأخير يجب أن يكون إغلاقاً } وليس فتحاً {
