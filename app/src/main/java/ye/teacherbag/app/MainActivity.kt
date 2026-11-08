@@ -316,7 +316,7 @@ class MainActivity : Activity() {
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
     // =====================================================================
-    // الدالة المعدلة (تم إصلاح خطأ البناء وضمان الترتيب الصحيح)
+    // الدالة المعدلة (تصحيح اتجاه الجدول والأيام)
     // =====================================================================
     private fun showAttendance() {
         var currentMonth = "الشهر الاول"
@@ -326,7 +326,6 @@ class MainActivity : Activity() {
         val classes = readClassNames()
         if (classes.isNotEmpty()) currentClass = classes.first()
 
-        // إعداد الجذر
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
