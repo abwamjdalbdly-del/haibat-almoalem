@@ -924,7 +924,8 @@ class MainActivity : Activity() {
                         val newPart = "_${Uri.encode(newName)}_"
                         val editor = prefs.edit()
                         prefs.all.keys.filter { it.startsWith(oldPrefix) && it.contains(oldPart) }.forEach { oldKey ->
-                            val newKey = oldKey.replaceFirst(oldPart, newPart)
+                            val keyParts = oldKey.split(oldPart)
+                            val newKey = keyParts.joinToString(newPart)
                             prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
                             editor.remove(oldKey)
                         }
