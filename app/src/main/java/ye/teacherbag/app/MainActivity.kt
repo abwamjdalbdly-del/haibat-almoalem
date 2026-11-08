@@ -1,4 +1,3 @@
-
 package ye.teacherbag.app
 
 import android.app.Activity
@@ -942,10 +941,12 @@ class MainActivity : Activity() {
                     if (newName != existing.name) {
                         val oldPrefix = "result_marks_v2_${Uri.encode(className)}_"
                         val oldPart = "_${Uri.encode(existing.name)}_"
+                        val newPart = "_${Uri.encode(newName)}_"
                         val editor = prefs.edit()
                         prefs.all.keys.filter { it.startsWith(oldPrefix) && it.contains(oldPart) }.forEach { oldKey ->
-                            // تم إصلاح الخطأ هنا: تحويل النص إلى String صريح لضمان عمل البناء
-                            val newKey = oldKey.replace(oldPart, "_" + Uri.encode(newName).toString() + "_")
+                            // إصلاح جذري: استخدام split/joinToString بدلاً من replace لتجنب أي أخطاء في الأنواع
+                            val keyParts = oldKey.split(oldPart)
+                            val newKey = keyParts.joinToString(newPart)
                             prefs.getString(oldKey, null)?.let { editor.putString(newKey, it) }
                             editor.remove(oldKey)
                         }
@@ -1558,4 +1559,3 @@ class MainActivity : Activity() {
         return output.toByteArray()
     }
 }
-```
