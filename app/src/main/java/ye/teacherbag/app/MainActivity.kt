@@ -1538,3 +1538,4 @@ class MainActivity : Activity() {
         return output.toByteArray()
     }
 }
+// هذا القوس الأخير يجب أن يكون إغلاقاً } وليس فتحاً {
