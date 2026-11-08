@@ -316,23 +316,30 @@ class MainActivity : Activity() {
         "attendance_matrix_v1_${Uri.encode(cls)}_${Uri.encode(month)}_${Uri.encode(week)}"
 
     // =====================================================================
-    // الدالة الجديدة كلياً لتصميم واجهة الحضور والغياب (بديلة للدالة القديمة)
+    // الدالة المحدثة بالكامل (تم إصلاح الاتجاه، العمودية، الأزرار، والربط)
     // =====================================================================
     private fun showAttendance() {
-        // 1. إعداد الخلفية العامة
+        // 1. إعداد المتغيرات الأساسية للحالة
+        var currentMonth = "الشهر الاول"
+        var currentWeek = "28-22"
+        var currentClass = "الخامس"
+        
+        val classes = readClassNames()
+        if (classes.isNotEmpty()) currentClass = classes.first()
+
+        // 2. إعداد الخلفية العامة (اللون البنفسجي)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setBackgroundColor(Color.parseColor("#6A5ACD")) // لون بنفسجي مطابق للصورة
+            setBackgroundColor(Color.parseColor("#6A5ACD")) 
         }
         setContentView(root)
 
-        // 2. الشريط العلوي (Header)
+        // 3. الشريط العلوي (Header)
         val topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(10), dp(15), dp(10), dp(15))
-            setBackgroundColor(Color.parseColor("#6A5ACD"))
         }
         
         val backBtn = TextView(this).apply {
@@ -344,11 +351,10 @@ class MainActivity : Activity() {
         }
         
         val titleText = TextView(this).apply {
-            text = "الصف : الخامس | 2026-2027"
+            text = "الصف : $currentClass | 2026-2027"
             textSize = 16f
             setTextColor(Color.BLACK)
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.WHITE)
             setPadding(dp(10), dp(8), dp(10), dp(8))
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
@@ -366,9 +372,7 @@ class MainActivity : Activity() {
                 shape = GradientDrawable.OVAL
             }
             val size = dp(35)
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                marginStart = dp(10)
-            }
+            layoutParams = LinearLayout.LayoutParams(size, size).apply { marginStart = dp(10) }
         }
 
         topBar.addView(backBtn)
@@ -376,7 +380,7 @@ class MainActivity : Activity() {
         topBar.addView(helpBtn)
         root.addView(topBar)
 
-        // الحاوية البيضاء الرئيسية
+        // 4. الحاوية البيضاء الرئيسية
         val mainWhiteContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#F0F0F0"))
@@ -385,9 +389,9 @@ class MainActivity : Activity() {
         }
         root.addView(mainWhiteContainer)
 
-        // 3. شريط الأسبوع (Week Bar)
+        // 5. شريط الأسبوع (Week Bar)
         val weekBar = TextView(this).apply {
-            text = "الاسبوع : الرابع"
+            text = "الاسبوع : $currentWeek"
             textSize = 16f
             setTextColor(Color.BLACK)
             gravity = Gravity.CENTER
@@ -401,7 +405,8 @@ class MainActivity : Activity() {
         }
         mainWhiteContainer.addView(weekBar, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
 
-        // 4. رأس الجدول (أسماء الأيام والتواريخ)
+        // 6. رأس الجدول (أسماء الأيام والتواريخ)
+        // تم ضبط الاتجاه ليكون من اليمين لليسار
         val tableHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL 
@@ -414,42 +419,7 @@ class MainActivity : Activity() {
             setPadding(dp(5), dp(5), dp(5), dp(5))
         }
 
-        // خلية "اسم الطالب"
-        val nameHeader = TextView(this).apply {
-            text = "اسم الطالب ..."
-            textSize = 14f
-            setTextColor(Color.BLACK)
-            gravity = Gravity.CENTER
-            setTypeface(null, Typeface.BOLD)
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#F8F9FA"))
-                setStroke(dp(1), Color.LTGRAY)
-                cornerRadius = dp(8).toFloat()
-            }
-            setPadding(dp(5), dp(10), dp(5), dp(10))
-        }
-        tableHeader.addView(nameHeader, LinearLayout.LayoutParams(0, -1, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
-
-        // خلايا الأيام
-        val daysList = listOf("الخميس\n28", "الأربعاء\n27", "الثلاثاء\n26", "الاثنين\n25", "الأحد\n23", "السبت\n22")
-        daysList.forEach { day ->
-            val dayCell = TextView(this).apply {
-                text = day
-                textSize = 12f
-                setTextColor(Color.BLACK)
-                gravity = Gravity.CENTER
-                setTypeface(null, Typeface.BOLD)
-                background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#F8F9FA"))
-                    setStroke(dp(1), Color.LTGRAY)
-                    cornerRadius = dp(8).toFloat()
-                }
-                setPadding(dp(2), dp(5), dp(2), dp(5))
-            }
-            tableHeader.addView(dayCell, LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
-        }
-        
-        // عمود الرقم "م"
+        // (أ) خلية "م" (أقصى اليمين)
         val numHeader = TextView(this).apply {
             text = "م"
             textSize = 14f
@@ -461,11 +431,48 @@ class MainActivity : Activity() {
                 cornerRadius = dp(8).toFloat()
             }
         }
-        tableHeader.addView(numHeader, LinearLayout.LayoutParams(dp(25), -1).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+        tableHeader.addView(numHeader, LinearLayout.LayoutParams(dp(30), dp(70)).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+        // (ب) خلية "اسم الطالب"
+        val nameHeader = TextView(this).apply {
+            text = "اسم الطالب ..."
+            textSize = 14f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.CENTER
+            setTypeface(null, Typeface.BOLD)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#F8F9FA"))
+                setStroke(dp(1), Color.LTGRAY)
+                cornerRadius = dp(8).toFloat()
+            }
+        }
+        tableHeader.addView(nameHeader, LinearLayout.LayoutParams(0, dp(70), 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+
+        // (ج) خلايا الأيام (عمودية)
+        val daysList = listOf("الخميس\n28", "الأربعاء\n27", "الثلاثاء\n26", "الاثنين\n25", "الأحد\n23", "السبت\n22")
+        daysList.forEach { day ->
+            val dayCell = FrameLayout(this).apply {
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#F8F9FA"))
+                    setStroke(dp(1), Color.LTGRAY)
+                    cornerRadius = dp(8).toFloat()
+                }
+            }
+            val dayText = TextView(this).apply {
+                text = day
+                textSize = 12f
+                setTextColor(Color.BLACK)
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+                rotation = 270f // تدوير النص ليكون عمودياً
+            }
+            dayCell.addView(dayText, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+            tableHeader.addView(dayCell, LinearLayout.LayoutParams(0, dp(70), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+        }
 
         mainWhiteContainer.addView(tableHeader, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, dp(5)) })
 
-        // 5. جدول الطلاب (Scrollable)
+        // 7. جدول الطلاب (Scrollable)
         val scrollView = ScrollView(this)
         val studentsContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -473,139 +480,201 @@ class MainActivity : Activity() {
         scrollView.addView(studentsContainer)
         mainWhiteContainer.addView(scrollView, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        // جلب بيانات الطلاب 
-        val classes = readClassNames()
-        val currentClass = if (classes.isNotEmpty()) classes.first() else "الصف الخامس"
-        var studentNames = classStudentNames(currentClass)
-        if (studentNames.isEmpty()) {
-            // بيانات تجريبية لتطابق الصورة
-            studentNames = mutableListOf("احمد علي...", "امير عبدا...", "انس يح...", "جلال عبد...", "خليل عبد...", "شوقي ها...", "عبدالرحمن...", "عبدالله ع...", "محمد عب...", "مشتاق ع...", "معين هار...")
-        }
-
-        // رسم صفوف الطلاب
-        studentNames.forEachIndexed { index, studentName ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutDirection = View.LAYOUT_DIRECTION_RTL
-                setPadding(dp(5), dp(2), dp(5), dp(2))
+        // 8. دالة تحديث الجدول بناءً على الشهر والأسبوع
+        fun updateTable() {
+            studentsContainer.removeAllViews()
+            weekBar.text = "الاسبوع : $currentWeek"
+            
+            var studentNames = classStudentNames(currentClass)
+            if (studentNames.isEmpty()) {
+                studentNames = mutableListOf("احمد علي...", "امير عبدا...", "انس يح...", "جلال عبد...", "خليل عبد...", "شوقي ها...", "عبدالرحمن...", "عبدالله ع...", "محمد عب...", "مشتاق ع...", "معين هار...")
             }
 
-            // اسم الطالب
-            val nameCell = TextView(this).apply {
-                text = studentName
-                textSize = 14f
-                setTextColor(Color.BLACK)
-                gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-                background = GradientDrawable().apply {
-                    setColor(if (index % 2 == 0) Color.WHITE else Color.parseColor("#F8F9FA"))
-                    setStroke(dp(1), Color.LTGRAY)
-                    cornerRadius = dp(8).toFloat()
+            // جلب البيانات المحفوظة لهذا الشهر والأسبوع
+            val savedDataStr = prefs.getString(attendanceKey(currentClass, currentMonth, currentWeek), "") ?: ""
+            val savedRecords = savedDataStr.split("\n").filter { it.contains("|") }.associate { line ->
+                val parts = line.split("|")
+                parts[0] to parts.getOrElse(1) { "" }.split(",")
+            }
+
+            studentNames.forEachIndexed { index, studentName ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
+                    setPadding(dp(5), dp(2), dp(5), dp(2))
                 }
-                setPadding(dp(10), dp(8), dp(10), dp(8))
-            }
-            row.addView(nameCell, LinearLayout.LayoutParams(0, -2, 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-            // خلايا الحضور
-            for (dayIndex in 0 until 6) {
-                val dayCell = TextView(this).apply {
-                    text = if ((index == 6 && dayIndex in 2..3) || (index == 8 && dayIndex in 2..3)) "غ" else ""
-                    textSize = 16f
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(Color.RED)
+                // (أ) رقم الطالب
+                val numCell = TextView(this).apply {
+                    text = (index + 1).toString()
+                    textSize = 14f
+                    setTextColor(Color.BLACK)
                     gravity = Gravity.CENTER
                     background = GradientDrawable().apply {
-                        setColor(Color.WHITE)
+                        setColor(Color.parseColor("#E0F7FA")) 
                         setStroke(dp(1), Color.LTGRAY)
                         cornerRadius = dp(8).toFloat()
                     }
                 }
-                row.addView(dayCell, LinearLayout.LayoutParams(0, -1, 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
-            }
+                row.addView(numCell, LinearLayout.LayoutParams(dp(30), dp(40)).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-            // رقم الطالب
-            val numCell = TextView(this).apply {
-                text = (index + 1).toString()
-                textSize = 14f
-                setTextColor(Color.BLACK)
-                gravity = Gravity.CENTER
-                background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#E0F7FA")) 
-                    setStroke(dp(1), Color.LTGRAY)
-                    cornerRadius = dp(8).toFloat()
+                // (ب) اسم الطالب (سطر واحد وارتفاع ثابت)
+                val nameCell = TextView(this).apply {
+                    text = studentName
+                    textSize = 14f
+                    setTextColor(Color.BLACK)
+                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+                    maxLines = 1 // منع النص من النزول لسطر جديد
+                    ellipsize = TextUtils.TruncateAt.END // وضع نقاط إذا كان الاسم طويلاً
+                    background = GradientDrawable().apply {
+                        setColor(if (index % 2 == 0) Color.WHITE else Color.parseColor("#F8F9FA"))
+                        setStroke(dp(1), Color.LTGRAY)
+                        cornerRadius = dp(8).toFloat()
+                    }
+                    setPadding(dp(10), 0, dp(10), 0)
                 }
-            }
-            row.addView(numCell, LinearLayout.LayoutParams(dp(25), -1).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+                row.addView(nameCell, LinearLayout.LayoutParams(0, dp(40), 2.5f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
 
-            studentsContainer.addView(row, LinearLayout.LayoutParams(-1, -2))
+                // (ج) خلايا الحضور
+                val studentMarks = savedRecords[studentName] ?: List(6) { "" }
+                for (dayIndex in 0 until 6) {
+                    val mark = studentMarks.getOrElse(dayIndex) { "" }
+                    val dayCell = TextView(this).apply {
+                        text = mark
+                        textSize = 16f
+                        setTypeface(null, Typeface.BOLD)
+                        setTextColor(if (mark == "غ") Color.RED else Color.BLACK)
+                        gravity = Gravity.CENTER
+                        background = GradientDrawable().apply {
+                            setColor(Color.WHITE)
+                            setStroke(dp(1), Color.LTGRAY)
+                            cornerRadius = dp(8).toFloat()
+                        }
+                        // عند النقر يتغير الحضور (فارغ -> حضر -> غياب -> عذر)
+                        setOnClickListener {
+                            val currentMark = this.text.toString()
+                            val newMark = when (currentMark) {
+                                "" -> "✓"
+                                "✓" -> "غ"
+                                "غ" -> "م"
+                                else -> ""
+                            }
+                            this.text = newMark
+                            this.setTextColor(if (newMark == "غ") Color.RED else Color.BLACK)
+                            // حفظ فوري
+                            saveAttendanceForStudent(currentClass, currentMonth, currentWeek, studentName, studentMarks)
+                        }
+                    }
+                    row.addView(dayCell, LinearLayout.LayoutParams(0, dp(40), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
+                }
+
+                studentsContainer.addView(row, LinearLayout.LayoutParams(-1, -2))
+            }
         }
 
-        // 6. الأزرار السفلية (الشهور والأسابيع)
+        // 9. الأزرار السفلية (الشهور والأسابيع) - مربوطة وتعمل
         val bottomContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(10), dp(10), dp(10), dp(10))
-            setBackgroundColor(Color.parseColor("#6A5ACD"))
         }
         root.addView(bottomContainer)
 
-        // أزرار الشهور
         val monthsLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             gravity = Gravity.CENTER
         }
+        val monthsButtons = mutableListOf<TextView>()
         
-        fun createMonthButton(text: String, isActive: Boolean): TextView {
-            return TextView(this).apply {
-                this.text = text
+        listOf("الشهر الاول", "الشهر الثاني", "الشهر الثالث").forEach { month ->
+            val btn = TextView(this).apply {
+                text = month
                 textSize = 14f
-                setTextColor(if (isActive) Color.WHITE else Color.BLACK)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
-                background = GradientDrawable().apply {
-                    setColor(if (isActive) Color.RED else Color.WHITE)
-                    cornerRadius = dp(20).toFloat()
-                }
                 setPadding(dp(15), dp(10), dp(15), dp(10))
+                setOnClickListener {
+                    currentMonth = month
+                    // تحديث ألوان الأزرار
+                    monthsButtons.forEach { b -> 
+                        val active = b.text == month
+                        b.setTextColor(if (active) Color.WHITE else Color.BLACK)
+                        b.background = GradientDrawable().apply {
+                            setColor(if (active) Color.RED else Color.WHITE)
+                            cornerRadius = dp(20).toFloat()
+                        }
+                    }
+                    updateTable()
+                }
             }
+            monthsButtons.add(btn)
+            monthsLayout.addView(btn, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
         }
-
-        monthsLayout.addView(createMonthButton("الشهر الاول", true), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
-        monthsLayout.addView(createMonthButton("الشهر الثاني", false), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
-        monthsLayout.addView(createMonthButton("الشهر الثالث", false), LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(5), 0, dp(5), 0) })
         bottomContainer.addView(monthsLayout)
 
-        // أزرار الأسابيع
         val weeksLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             gravity = Gravity.CENTER
             setPadding(0, dp(10), 0, 0)
         }
+        val weeksButtons = mutableListOf<TextView>()
 
-        val weekLabels = listOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة")
-        weekLabels.forEachIndexed { i, label ->
-            val isActive = (label == "28-22")
+        listOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة").forEach { week ->
             val btn = TextView(this).apply {
-                text = label
+                text = week
                 textSize = 13f
-                setTextColor(if (isActive) Color.WHITE else Color.BLACK)
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
-                background = GradientDrawable().apply {
-                    setColor(if (isActive) Color.RED else Color.WHITE)
-                    cornerRadius = dp(20).toFloat()
-                }
                 setPadding(dp(5), dp(10), dp(5), dp(10))
+                setOnClickListener {
+                    currentWeek = week
+                    weeksButtons.forEach { b -> 
+                        val active = b.text == week
+                        b.setTextColor(if (active) Color.WHITE else Color.BLACK)
+                        b.background = GradientDrawable().apply {
+                            setColor(if (active) Color.RED else Color.WHITE)
+                            cornerRadius = dp(20).toFloat()
+                        }
+                    }
+                    updateTable()
+                }
             }
+            weeksButtons.add(btn)
             weeksLayout.addView(btn, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
         }
         bottomContainer.addView(weeksLayout)
+
+        // التهيئة الأولية للأزرار
+        monthsButtons.find { it.text == currentMonth }?.performClick()
+        weeksButtons.find { it.text == currentWeek }?.performClick()
+    }
+
+    // دالة مساعدة لحفظ حالة طالب واحد
+    private fun saveAttendanceForStudent(cls: String, month: String, week: String, student: String, marks: List<String>) {
+        val key = attendanceKey(cls, month, week)
+        val currentStr = prefs.getString(key, "") ?: ""
+        val lines = currentStr.split("\n").filter { it.isNotBlank() }.toMutableList()
+        
+        val newLine = "$student|${marks.joinToString(",")}"
+        var found = false
+        for (i in lines.indices) {
+            if (lines[i].startsWith("$student|")) {
+                lines[i] = newLine
+                found = true
+                break
+            }
+        }
+        if (!found) lines.add(newLine)
+        
+        prefs.edit().putString(key, lines.joinToString("\n")).apply()
     }
     // =====================================================================
-    // نهاية الدالة المعدلة
+    // نهاية دالة الحضور المعدلة
     // =====================================================================
 
     private fun showMonthlyAttendance() {
+        // ... (هذه الدالة لم يتم المساس بها)
         setup("كشف الحضور الشهري")
         val months = listOf("الشهر جماداول", "الشهر جمادثاني", "الشهر رجب")
         val classes = readClassNames().ifEmpty { listOf("لا توجد صفوف") }
