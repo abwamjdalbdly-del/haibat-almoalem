@@ -5,14 +5,13 @@ plugins {
 
 android {
     namespace = "ye.teacherbag.app"
-    compileSdk = 35
+    compileSdk = 33 // تم التخفيض
 
     defaultConfig {
         applicationId = "ye.teacherbag.app"
-        minSdk = 26
-        targetSdk = 35
+        minSdk = 24 // تم التخفيض ليدعم هواتف أكثر
+        targetSdk = 33 // تم التخفيض
 
-        // أعلى من رقم النسخ السابق الذي كان 2
         versionCode = 3
         versionName = "0.3"
     }
