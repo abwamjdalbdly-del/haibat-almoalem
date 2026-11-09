@@ -345,10 +345,9 @@ class MainActivity : Activity() {
         }
         val monthsButtons = mutableListOf<TextView>()
 
-        listOf("الشهر\nالاول", "الشهر\nالثاني", "الشهر\nالثالث").forEach { monthText ->
-            val month = monthText.replace("\n", " ")
+        listOf("الشهر الاول", "الشهر الثاني", "الشهر الثالث").forEach { month ->
             val btn = TextView(this).apply {
-                text = monthText
+                text = month
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
@@ -356,7 +355,7 @@ class MainActivity : Activity() {
                 setOnClickListener {
                     currentMonth = month
                     monthsButtons.forEach { b ->
-                        val active = b.text.replace("\n", " ") == month
+                        val active = b.text == month
                         b.setTextColor(if (active) Color.WHITE else Color.BLACK)
                         b.background = GradientDrawable().apply {
                             setColor(if (active) Color.RED else Color.WHITE)
@@ -379,10 +378,9 @@ class MainActivity : Activity() {
         }
         val weeksButtons = mutableListOf<TextView>()
 
-        listOf("7-1", "14-\n8", "15-\n22", "28-\n22", "21-\n28", "خلا\nصة").forEach { weekText ->
-            val week = weekText.replace("\n", "")
+        listOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة").forEach { week ->
             val btn = TextView(this).apply {
-                text = weekText
+                text = week
                 textSize = 13f
                 gravity = Gravity.CENTER
                 setTypeface(null, Typeface.BOLD)
@@ -390,7 +388,7 @@ class MainActivity : Activity() {
                 setOnClickListener {
                     currentWeek = week
                     weeksButtons.forEach { b ->
-                        val active = b.text.replace("\n", "") == week
+                        val active = b.text == week
                         b.setTextColor(if (active) Color.WHITE else Color.BLACK)
                         b.background = GradientDrawable().apply {
                             setColor(if (active) Color.RED else Color.WHITE)
