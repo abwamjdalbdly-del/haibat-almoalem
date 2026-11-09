@@ -378,7 +378,9 @@ class MainActivity : Activity() {
         }
         val weeksButtons = mutableListOf<TextView>()
 
-        listOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة").forEach { week ->
+        // تم إصلاح هذا السطر لضمان عدم حدوث أي خطأ
+        val weeksArray = arrayOf("7-1", "14-8", "15-22", "28-22", "21-28", "خلاصة")
+        weeksArray.forEach { week ->
             val btn = TextView(this).apply {
                 text = week
                 textSize = 13f
