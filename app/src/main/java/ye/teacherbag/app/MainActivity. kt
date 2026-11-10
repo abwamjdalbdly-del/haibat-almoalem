@@ -361,17 +361,19 @@ class MainActivity : Activity() {
         addSelector("الأسبوع", weekSpinner)
         root.addView(selectorsRow, LinearLayout.LayoutParams(-1, -2))
 
-        val verticalScroll = ScrollView(this)
         val horizontalScroll = HorizontalScrollView(this).apply {
             isFillViewport = false
             isHorizontalScrollBarEnabled = true
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            layoutDirection = View.LAYOUT_DIRECTION_RTL 
         }
-        val tableHost = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val table = TableLayout(this).apply {
+            isStretchAllColumns = false
+            isShrinkAllColumns = false
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
         }
-        horizontalScroll.addView(tableHost, ViewGroup.LayoutParams(-2, -2))
+        horizontalScroll.addView(table, ViewGroup.LayoutParams(-2, -2))
+        
+        val verticalScroll = ScrollView(this)
         verticalScroll.addView(horizontalScroll, ViewGroup.LayoutParams(-1, -2))
         root.addView(verticalScroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
@@ -404,7 +406,7 @@ class MainActivity : Activity() {
         var currentValues = linkedMapOf<String, MutableList<String>>()
 
         fun render() {
-            tableHost.removeAllViews()
+            table.removeAllViews()
             val cls = classSpinner.selectedItem?.toString() ?: classes.first()
             val month = monthSpinner.selectedItem?.toString() ?: months.first()
             val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
@@ -417,54 +419,52 @@ class MainActivity : Activity() {
                 }
 
             currentValues = linkedMapOf()
-            val table = TableLayout(this).apply {
-                isStretchAllColumns = false
-                isShrinkAllColumns = false
-                setPadding(0, dp(3), 0, dp(8))
-            }
             val nameWidth = dp(150)
-            val dayWidth = dp(35)
-            val headerHeight = dp(75)
-            val rowHeight = dp(35)
+            val dayWidth = dp(40)
+            val headerHeight = dp(70)
+            val rowHeight = dp(40)
             val days = listOf("السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس")
 
-            val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
-            days.reversed().forEach { title ->
-                val cell = FrameLayout(this).apply {
-                    minimumWidth = 0; minimumHeight = 0
-                    background = GradientDrawable().apply {
-                        setColor(Color.rgb(0, 188, 212))
-                        setStroke(dp(2), Color.DKGRAY)
-                        cornerRadius = dp(18).toFloat()
-                    }
-                }
-                val word = TextView(this).apply {
-                    text = title; textSize = 16f; gravity = Gravity.CENTER
-                    setTextColor(Color.BLACK); includeFontPadding = true; rotation = 270f
-                }
-                cell.addView(word, FrameLayout.LayoutParams(headerHeight - dp(12), dp(34), Gravity.CENTER))
-                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight).apply {
-                    width = dayWidth; setMargins(dp(2), dp(2), dp(2), dp(2))
-                })
-            }
+            val header = TableRow(this).apply { layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            
             val nameHeader = TextView(this).apply {
                 text = "اسم الطالب"; textSize = 15f; gravity = Gravity.CENTER
                 setTextColor(Color.WHITE); setBackgroundColor(green)
                 setPadding(dp(5), dp(6), dp(5), dp(6)); minHeight = headerHeight
             }
             header.addView(nameHeader, TableRow.LayoutParams(nameWidth, headerHeight))
+
+            days.forEach { title ->
+                val cell = TextView(this).apply {
+                    text = title; textSize = 14f; gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(0, 188, 212))
+                    setPadding(dp(2), dp(2), dp(2), dp(2)); minHeight = headerHeight
+                }
+                header.addView(cell, TableRow.LayoutParams(dayWidth, headerHeight))
+            }
             table.addView(header)
 
             names.forEachIndexed { index, name ->
                 val row = TableRow(this).apply {
-                    layoutDirection = View.LAYOUT_DIRECTION_LTR
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
                     minimumHeight = rowHeight
                 }
                 val old = saved[name]?.split(",") ?: emptyList()
                 val dayValues = MutableList(6) { day -> old.getOrElse(day) { "" } }
                 currentValues[name] = dayValues
 
-                days.indices.reversed().forEach { day ->
+                val nameCell = TextView(this).apply {
+                    text = "${index + 1}. $name"; textSize = 15f
+                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+                    setTextColor(Color.BLACK)
+                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(230, 245, 240))
+                    setPadding(dp(10), dp(5), dp(10), dp(5))
+                    maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                    minHeight = rowHeight
+                }
+                row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
+
+                days.indices.forEach { day ->
                     val spinner = Spinner(this).apply {
                         minimumWidth = 0; minimumHeight = 0
                         setBackgroundColor(Color.TRANSPARENT)
@@ -482,34 +482,18 @@ class MainActivity : Activity() {
                             dayValues[day] = listOf("", "✓", "غ", "م")[position]
                         }
                     }
-                    row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight).apply { width = dayWidth })
+                    row.addView(spinner, TableRow.LayoutParams(dayWidth, rowHeight))
                 }
-
-                val nameCell = TextView(this).apply {
-                    text = "${index + 1}. $name"; textSize = 16f
-                    gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-                    setTextColor(Color.BLACK)
-                    setBackgroundColor(if (index % 2 == 0) Color.WHITE else Color.rgb(0, 188, 212))
-                    setPadding(dp(10), dp(5), dp(10), dp(5))
-                    maxLines = 2; ellipsize = TextUtils.TruncateAt.END
-                    minHeight = rowHeight
-                }
-                row.addView(nameCell, TableRow.LayoutParams(nameWidth, rowHeight))
                 table.addView(row)
-
-                val separator = View(this).apply { setBackgroundColor(Color.LTGRAY) }
-                table.addView(TableRow(this).apply {
-                    addView(separator, TableRow.LayoutParams(-1, dp(1)).apply { span = 7 })
-                })
             }
+            
             if (names.isEmpty()) {
-                tableHost.addView(TextView(this).apply {
-                    text = "لا توجد أسماء طلاب في هذا الصف."; textSize = 16f
-                    setPadding(dp(12), dp(20), dp(12), dp(20))
+                table.addView(TableRow(this).apply {
+                    addView(TextView(this@MainActivity).apply {
+                        text = "لا توجد أسماء طلاب في هذا الصف."; textSize = 16f
+                        setPadding(dp(12), dp(20), dp(12), dp(20))
+                    }, TableRow.LayoutParams(-2, -2))
                 })
-            } else {
-                tableHost.addView(table, LinearLayout.LayoutParams(-2, -2))
-                horizontalScroll.post { horizontalScroll.scrollTo(0, 0) }
             }
         }
 
@@ -523,77 +507,6 @@ class MainActivity : Activity() {
             ).apply()
             val all = currentValues.values.flatten()
             toast("تم الحفظ — حاضر: ${all.count { it == "✓" }}، غائب: ${all.count { it == "غ" }}، بعذر: ${all.count { it == "م" }}")
-        }
-
-        summaryButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val all = currentValues.values.flatten()
-            AlertDialog.Builder(this).setTitle("ملخص $month — $week")
-                .setMessage("الصف: $cls\nأيام الحضور: ${all.count { it == "✓" }}\nالغياب: ${all.count { it == "غ" }}\nالغياب بعذر: ${all.count { it == "م" }}\nغير محدد: ${all.count { it.isEmpty() }}")
-                .setPositiveButton("إغلاق", null).show()
-        }
-
-        exportButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names = classStudentNames(cls)
-
-            val rows = mutableListOf<List<String>>()
-            rows.add(listOf("كشف الحضور والغياب"))
-            rows.add(listOf("الصف", cls))
-            rows.add(listOf("الشهر", month))
-            rows.add(listOf("الأسبوع", week))
-            rows.add(listOf("م", "اسم الطالب", "السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"))
-
-            names.forEachIndexed { index, name ->
-                val values = currentValues[name] ?: MutableList(6) { "" }
-                rows.add(
-                    listOf((index + 1).toString(), name) +
-                            values.map {
-                                when (it) {
-                                    "✓" -> "حاضر"; "غ" -> "غائب"; "م" -> "بعذر"; else -> ""
-                                }
-                            }
-                )
-            }
-
-            try {
-                pendingExcelData = createExcelFile(rows)
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    putExtra(Intent.EXTRA_TITLE, "كشف الحضور - $cls - $month - $week.xlsx")
-                }
-                startActivityForResult(intent, saveExcelRequest)
-            } catch (e: Exception) {
-                pendingExcelData = null
-                showError("تعذر تجهيز ملف Excel للتصدير")
-            }
-        }
-
-        pdfButton.setOnClickListener {
-            val cls = classSpinner.selectedItem?.toString() ?: classes.first()
-            val month = monthSpinner.selectedItem?.toString() ?: months.first()
-            val week = weekSpinner.selectedItem?.toString() ?: "الأسبوع: 1"
-            val names = classStudentNames(cls)
-
-            if (names.isEmpty()) { toast("لا توجد أسماء طلاب لتصديرها"); return@setOnClickListener }
-
-            try {
-                pendingPdfData = createAttendancePdf(cls, month, week, names, currentValues)
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_TITLE, "كشف الحضور - $cls - $month - $week.pdf")
-                }
-                startActivityForResult(intent, savePdfRequest)
-            } catch (e: Exception) {
-                pendingPdfData = null
-                showError("تعذر تجهيز كشف PDF")
-            }
         }
 
         val listener = object : AdapterView.OnItemSelectedListener {
