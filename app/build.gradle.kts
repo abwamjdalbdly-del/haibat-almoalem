@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "ye.teacherbag.app"
-    compileSdk = 33
+    compileSdk = 31
 
     defaultConfig {
         applicationId = "ye.teacherbag.app"
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 31
         versionCode = 1
         versionName = "1.0"
     }
